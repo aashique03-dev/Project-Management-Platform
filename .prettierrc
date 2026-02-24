@@ -1,0 +1,9 @@
+{
+    "tabWith": 2,
+    "useTabe": false,
+    "semi": true,
+    "singleQuote": false,
+    "trailingComma": "all",
+    "barketSpacing": true,
+    "arrowParens": "always"
+}
