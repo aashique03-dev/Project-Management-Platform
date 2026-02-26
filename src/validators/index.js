@@ -8,7 +8,7 @@ const userRegisterValidator = () => {
             .withMessage("Email is required")
             .isEmail()
             .withMessage("Email is invalid"),
-        body("userName")
+        body("username")
             .trim()
             .notEmpty()
             .withMessage("userName is required")
@@ -26,7 +26,20 @@ const userRegisterValidator = () => {
             .trim()
     ]
 }
+const userLogginValidator = () => {
+    return [
+        body("email")
+            .notEmpty()
+            .withMessage("Email is required")
+            .isEmail()
+            .withMessage("Email is invalid"),
+        body("password")
+            .notEmpty()
+            .withMessage("Password is required")
+    ]
+}
 
 export {
-    userRegisterValidator
+    userRegisterValidator,
+    userLogginValidator
 }
