@@ -3,6 +3,8 @@ import { ApiError } from "../utils/apiError.js"
 import { ApiResponse } from "../utils/apiResponse.js"
 import { asyncHandler } from "../utils/async-handler.js"
 import { emailVerficationMailgenContent, sendEmail } from "../utils/mail.js"
+
+
 const generateAccessAndRefreshToken = async (userID) => {
     try {
         const user = await User.findById(userID)
@@ -104,5 +106,26 @@ const login = asyncHandler(async (req, res) => {
         )
 
 })
-export { registerUser, login }
+
+const logoutUser = asyncHandler(async (req, res) => {
+    await User.findByIdAndUpdate(
+        req._id, {
+        $set: {
+            refreshToken: ""
+        }
+    },
+        {
+            new: true,
+        }
+    )
+    const option = {
+        httpOnly: true,
+        secure: true
+    }
+    return res.status(200).clearCookie("accessToken", option).clearCookie("refreshToken", option).json(
+        new ApiResponse(200, {}, "User logged out"))
+
+})
+
+export { registerUser, login, logoutUser }
 
