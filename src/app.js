@@ -2,7 +2,7 @@ import express from "express"
 import cors from "cors"
 import healthCheckRouter from "./routes/healthchech.routes.js"
 import authRoute from "./routes/auth.routes.js"
-
+import cookieParser from "cookie-parser"
 
 const app = express()
 
@@ -11,6 +11,7 @@ const app = express()
 app.use(express.json({ limit: "16kb" }))
 app.use(express.urlencoded({ extended: true, limit: "16kb" }))
 app.use(express.static("public"))
+app.use(cookieParser())
 
 
 // cors configuration
@@ -29,4 +30,14 @@ app.get("/", (req, res) => {
     console.log("Hello world");
     res.json({ message: "Hello" })
 })
+
+
+app.use((err, req, res, next) => {
+    res.status(err.statusCode || 500).json({
+        success: false,
+        message: err.message,
+        errors: err.errors || []
+    });
+});
+
 export { app }
