@@ -10,19 +10,19 @@ import {
   deleteProject,
   updateMemberRole,
 } from "../controllers/project.controllers.js";
-import { validate } from "../middlewares/validator.middleware.js";
+import { validate } from "../middlewares/validators.middlewares.js";
 import {
   createProjectValidator,
   addMembertoProjectValidator,
 } from "../validators/index.js";
 import {
-  verifyJWT,
+  verifyJwt,
   validateProjectPermission,
-} from "../middlewares/auth.middleware.js";
+} from "../middlewares/auth.middlewares.js";
 import { AvailableUserRole, UserRolesEnum } from "../utils/constants.js";
 
 const router = Router();
-router.use(verifyJWT);
+router.use(verifyJwt);
 
 router
   .route("/")
