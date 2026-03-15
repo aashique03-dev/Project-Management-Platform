@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { AvailableTaskStatues, TaskStatusEnum } from "../utils/constants.js";
+import { AvailableTaskStatus, TaskStatusEnum } from "../utils/constants.js";
 
 const taskSchema = new Schema(
   {
@@ -24,8 +24,11 @@ const taskSchema = new Schema(
     },
     status: {
       type: String,
-      enum: AvailableTaskStatues,
+      enum: AvailableTaskStatus,
       default: TaskStatusEnum.TODO,
+    },
+    dueDate: {
+      type: Date,
     },
     attachments: {
       type: [
@@ -41,4 +44,4 @@ const taskSchema = new Schema(
   { timestamps: true },
 );
 
-export const Taks = mongoose.model("Task", taskSchema);
+export const Task = mongoose.model("Task", taskSchema);

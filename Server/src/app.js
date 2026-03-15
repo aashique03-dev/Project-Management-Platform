@@ -4,6 +4,8 @@ import healthCheckRouter from "./routes/healthchech.routes.js"
 import authRoute from "./routes/auth.routes.js"
 import cookieParser from "cookie-parser"
 import projectRouter from "./routes/project.routes.js";
+import taskRouter from "./routes/task.routes.js";
+import commentRouter from "./routes/comment.routes.js";
 
 const app = express()
 
@@ -26,6 +28,8 @@ app.use(cors({
 app.use("/api/v1/healthcheck", healthCheckRouter);
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/projects", projectRouter);
+app.use("/api/v1/tasks", taskRouter);
+app.use("/api/v1/comments", commentRouter);
 
 
 
