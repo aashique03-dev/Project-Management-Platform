@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { CheckCircle, Clock, AlertTriangle, Users, ArrowRightIcon } from "lucide-react";
 
-// Colors for charts and priorities
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+
 const PRIORITY_COLORS = {
     LOW: "text-red-600 bg-red-200 dark:text-red-500 dark:bg-red-600",
     MEDIUM: "text-blue-600 bg-blue-200 dark:text-blue-500 dark:bg-blue-600",
@@ -23,25 +23,34 @@ const ProjectAnalytics = ({ project, tasks }) => {
             overdue: 0,
         };
 
-        const statusMap = { TODO: 0, IN_PROGRESS: 0, DONE: 0 };
+        // ✅ lowercase to match backend enums
+        const statusMap = { todo: 0, in_progress: 0, done: 0 };
         const typeMap = { TASK: 0, BUG: 0, FEATURE: 0, IMPROVEMENT: 0, OTHER: 0 };
         const priorityMap = { LOW: 0, MEDIUM: 0, HIGH: 0 };
 
         tasks.forEach((t) => {
-            if (t.status === "DONE") stats.completed++;
-            if (t.status === "IN_PROGRESS") stats.inProgress++;
-            if (t.status === "TODO") stats.todo++;
-            if (new Date(t.due_date) < now && t.status !== "DONE") stats.overdue++;
+            // ✅ lowercase status comparisons
+            if (t.status === "done") stats.completed++;
+            if (t.status === "in_progress") stats.inProgress++;
+            if (t.status === "todo") stats.todo++;
+            if (new Date(t.dueDate || t.due_date) < now && t.status !== "done") stats.overdue++;
 
-            if (statusMap[t.status] !== undefined) statusMap[t.status]++;
-            if (typeMap[t.type] !== undefined) typeMap[t.type]++;
-            if (priorityMap[t.priority] !== undefined) priorityMap[t.priority]++;
+            // ✅ increment all three maps
+            if (t.status && statusMap[t.status] !== undefined) statusMap[t.status]++;
+            if (t.type && typeMap[t.type] !== undefined) typeMap[t.type]++;
+            if (t.priority && priorityMap[t.priority] !== undefined) priorityMap[t.priority]++;
         });
 
         return {
             stats,
-            statusData: Object.entries(statusMap).map(([k, v]) => ({ name: k.replace("_", " "), value: v })),
-            typeData: Object.entries(typeMap).filter(([_, v]) => v > 0).map(([k, v]) => ({ name: k, value: v })),
+            // ✅ format labels: "in_progress" → "In Progress"
+            statusData: Object.entries(statusMap).map(([k, v]) => ({
+                name: k.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+                value: v,
+            })),
+            typeData: Object.entries(typeMap)
+                .filter(([_, v]) => v > 0)
+                .map(([k, v]) => ({ name: k, value: v })),
             priorityData: Object.entries(priorityMap).map(([k, v]) => ({
                 name: k,
                 value: v,
@@ -88,10 +97,7 @@ const ProjectAnalytics = ({ project, tasks }) => {
             {/* Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {metrics.map((m, i) => (
-                    <div
-                        key={i}
-                        className="not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6"
-                    >
+                    <div key={i} className="not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-zinc-600 dark:text-zinc-400 text-sm">{m.label}</p>
@@ -110,12 +116,7 @@ const ProjectAnalytics = ({ project, tasks }) => {
                     <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Status</h2>
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={statusData}>
-                            <XAxis
-                                dataKey="name"
-                                tick={{ fill: "#52525b", fontSize: 12 }}
-                                axisLine={{ stroke: "#d4d4d8" }}
-                                dark={{ stroke: "#27272a" }}
-                            />
+                            <XAxis dataKey="name" tick={{ fill: "#52525b", fontSize: 12 }} axisLine={{ stroke: "#d4d4d8" }} />
                             <YAxis tick={{ fill: "#52525b", fontSize: 12 }} axisLine={{ stroke: "#d4d4d8" }} />
                             <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                         </BarChart>
@@ -125,23 +126,29 @@ const ProjectAnalytics = ({ project, tasks }) => {
                 {/* Tasks by Type */}
                 <div className="not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
                     <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Type</h2>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie
-                                data={typeData}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={100}
-                                label={({ name, value }) => `${name}: ${value}`}
-                            >
-                                {typeData.map((_, i) => (
-                                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                ))}
-                            </Pie>
-                        </PieChart>
-                    </ResponsiveContainer>
+                    {typeData.length === 0 ? (
+                        <div className="flex items-center justify-center h-[300px] text-zinc-500 dark:text-zinc-400 text-sm">
+                            No task type data yet
+                        </div>
+                    ) : (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                                <Pie
+                                    data={typeData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={100}
+                                    label={({ name, value }) => `${name}: ${value}`}
+                                >
+                                    {typeData.map((_, i) => (
+                                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    )}
                 </div>
             </div>
 

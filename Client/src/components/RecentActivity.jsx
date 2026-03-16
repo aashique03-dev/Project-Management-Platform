@@ -12,25 +12,19 @@ const typeIcons = {
 };
 
 const statusColors = {
-    TODO: "bg-zinc-200 text-zinc-800 dark:bg-zinc-600 dark:text-zinc-200",
-    IN_PROGRESS: "bg-amber-200 text-amber-800 dark:bg-amber-500 dark:text-amber-900",
-    DONE: "bg-emerald-200 text-emerald-800 dark:bg-emerald-500 dark:text-emerald-900",
+    todo: "bg-zinc-200 text-zinc-800 dark:bg-zinc-600 dark:text-zinc-200",
+    in_progress: "bg-amber-200 text-amber-800 dark:bg-amber-500 dark:text-amber-900",
+    done: "bg-emerald-200 text-emerald-800 dark:bg-emerald-500 dark:text-emerald-900",
 };
 
 const RecentActivity = () => {
     const [tasks, setTasks] = useState([]);
     const { currentWorkspace } = useSelector((state) => state.workspace);
 
-    const getTasksFromCurrentWorkspace = () => {
-
-        if (!currentWorkspace) return;
-
-        const tasks = currentWorkspace.projects.flatMap((project) => project.tasks.map((task) => task));
-        setTasks(tasks);
-    };
-
     useEffect(() => {
-        getTasksFromCurrentWorkspace();
+        if (!currentWorkspace) return;
+        const allTasks = currentWorkspace.projects.flatMap((project) => project.tasks);
+        setTasks(allTasks);
     }, [currentWorkspace]);
 
     return (
@@ -50,11 +44,12 @@ const RecentActivity = () => {
                 ) : (
                     <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
                         {tasks.map((task) => {
+                            const taskId = task._id || task.id;
                             const TypeIcon = typeIcons[task.type]?.icon || Square;
                             const iconColor = typeIcons[task.type]?.color || "text-gray-500 dark:text-gray-400";
 
                             return (
-                                <div key={task.id} className="p-6 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                                <div key={taskId} className="p-6 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
                                     <div className="flex items-start gap-4">
                                         <div className="p-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg">
                                             <TypeIcon className={`w-4 h-4 ${iconColor}`} />
@@ -65,12 +60,17 @@ const RecentActivity = () => {
                                                     {task.title}
                                                 </h4>
                                                 <span className={`ml-2 px-2 py-1 rounded text-xs ${statusColors[task.status] || "bg-zinc-300 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"}`}>
-                                                    {task.status.replace("_", " ")}
+                                                    {task.status
+                                                        ? task.status.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+                                                        : "Unknown"}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                                                <span className="capitalize">{task.type.toLowerCase()}</span>
-                                                {task.assignee && (
+                                                {/* ✅ guard task.type before calling .toLowerCase() */}
+                                                {task.type && (
+                                                    <span className="capitalize">{task.type.toLowerCase()}</span>
+                                                )}
+                                                {task.assignee?.name && (
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-4 h-4 bg-zinc-300 dark:bg-zinc-700 rounded-full flex items-center justify-center text-[10px] text-zinc-800 dark:text-zinc-200">
                                                             {task.assignee.name[0].toUpperCase()}
@@ -79,7 +79,9 @@ const RecentActivity = () => {
                                                     </div>
                                                 )}
                                                 <span>
-                                                    {format(new Date(task.updatedAt), "MMM d, h:mm a")}
+                                                    {task.updatedAt && !isNaN(new Date(task.updatedAt))
+                                                        ? format(new Date(task.updatedAt), "MMM d, h:mm a")
+                                                        : "-"}
                                                 </span>
                                             </div>
                                         </div>
