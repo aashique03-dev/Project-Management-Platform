@@ -9,7 +9,13 @@ export default function Projects() {
     const dispatch = useDispatch()
     const projects = useSelector(state => state?.workspace?.currentWorkspace?.projects || [])
 
-    useEffect(() => { dispatch(fetchProjects()) }, [dispatch])
+    const { isAuthenticated } = useSelector(state => state.auth);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            dispatch(fetchProjects());
+        }
+    }, [dispatch, isAuthenticated]);
 
     const [filteredProjects, setFilteredProjects] = useState([])
     const [searchTerm, setSearchTerm] = useState("")
