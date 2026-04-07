@@ -581,7 +581,7 @@ const LandingPage = () => {
                                     position:"absolute", top:14, right:16,
                                     fontFamily:"'Space Grotesk',sans-serif",
                                     fontSize:42, fontWeight:900,
-                                    color:"rgba(245,158,11,0.06)", lineHeight:1, userSelect:"none"
+                                   color: "rgb(245,158,11)",opacity: 0.4, lineHeight:1, userSelect:"none"
                                 }}>{w.step}</span>
                                 <div style={{ width:40, height:40, borderRadius:10, background:C.accentMuted, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:14 }}>
                                     <w.icon size={18} strokeWidth={1.5} color={C.accent} />
