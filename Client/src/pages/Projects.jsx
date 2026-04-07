@@ -6,77 +6,71 @@ import CreateProjectDialog from "../components/CreateProjectDialog";
 import { fetchProjects } from "../features/workspaceSlice";
 
 export default function Projects() {
-    const dispatch = useDispatch();
-    const projects = useSelector(
-        (state) => state?.workspace?.currentWorkspace?.projects || []
-    );
+    const dispatch = useDispatch()
+    const projects = useSelector(state => state?.workspace?.currentWorkspace?.projects || [])
+
+    useEffect(() => { dispatch(fetchProjects()) }, [dispatch])
+
+    const [filteredProjects, setFilteredProjects] = useState([])
+    const [searchTerm, setSearchTerm] = useState("")
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [filters, setFilters] = useState({ status: "ALL", priority: "ALL" })
 
     useEffect(() => {
-        dispatch(fetchProjects());
-    }, [dispatch]);
-
-    const [filteredProjects, setFilteredProjects] = useState([]);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [filters, setFilters] = useState({
-        status: "ALL",
-        priority: "ALL",
-    });
-
-    useEffect(() => {
-        let filtered = projects;
-
+        let filtered = projects
         if (searchTerm) {
-            filtered = filtered.filter(
-                (project) =>
-                    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            filtered = filtered.filter(p =>
+                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.description?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
         }
-
-        if (filters.status !== "ALL") {
-            filtered = filtered.filter((project) => project.status === filters.status);
-        }
-
-        if (filters.priority !== "ALL") {
-            filtered = filtered.filter((project) => project.priority === filters.priority);
-        }
-
-        setFilteredProjects(filtered);
-    }, [projects, searchTerm, filters]);
+        if (filters.status !== "ALL") filtered = filtered.filter(p => p.status === filters.status)
+        if (filters.priority !== "ALL") filtered = filtered.filter(p => p.priority === filters.priority)
+        setFilteredProjects(filtered)
+    }, [projects, searchTerm, filters])
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto">
+        <div>
             {/* Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1.5rem", flexWrap: "wrap", marginBottom: "1.75rem" }}>
                 <div>
-                    <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-1">Projects</h1>
-                    <p className="text-gray-500 dark:text-zinc-400 text-sm">Manage and track your projects</p>
+                    <p className="section-label">Workspace</p>
+                    <h1 style={{
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        fontSize: "1.75rem", fontWeight: 700,
+                        letterSpacing: "-0.03em", color: "var(--fg)", marginBottom: "0.25rem"
+                    }}>
+                        Projects
+                    </h1>
+                    <p style={{ fontSize: "0.875rem", color: "var(--fg-muted)" }}>
+                        {projects.length} project{projects.length !== 1 ? 's' : ''} in your workspace
+                    </p>
                 </div>
-                <button
-                    onClick={() => setIsDialogOpen(true)}
-                    className="flex items-center px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition"
-                >
-                    <Plus className="size-4 mr-2" /> New Project
+                <button onClick={() => setIsDialogOpen(true)} className="btn btn-primary">
+                    <Plus size={15} strokeWidth={2.5} /> New Project
                 </button>
-                <CreateProjectDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
             </div>
 
-            {/* Search and Filters */}
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-zinc-400 w-4 h-4" />
+            {/* Filters */}
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "1.75rem" }}>
+                <div style={{ position: "relative", flex: 1, minWidth: "180px", maxWidth: "20rem" }}>
+                    <Search size={14} strokeWidth={1.5} style={{
+                        position: "absolute", left: "0.75rem", top: "50%",
+                        transform: "translateY(-50%)", color: "var(--fg-muted)"
+                    }} />
                     <input
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={e => setSearchTerm(e.target.value)}
                         value={searchTerm}
-                        className="w-full pl-10 text-sm pr-4 py-2 rounded-lg border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-400 focus:border-blue-500 outline-none"
+                        className="input"
+                        style={{ paddingLeft: "2.25rem" }}
                         placeholder="Search projects..."
                     />
                 </div>
                 <select
                     value={filters.status}
-                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white text-sm"
+                    onChange={e => setFilters({ ...filters, status: e.target.value })}
+                    className="input"
+                    style={{ width: "auto", minWidth: "130px" }}
                 >
                     <option value="ALL">All Status</option>
                     <option value="ACTIVE">Active</option>
@@ -87,8 +81,9 @@ export default function Projects() {
                 </select>
                 <select
                     value={filters.priority}
-                    onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
-                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white text-sm"
+                    onChange={e => setFilters({ ...filters, priority: e.target.value })}
+                    className="input"
+                    style={{ width: "auto", minWidth: "130px" }}
                 >
                     <option value="ALL">All Priority</option>
                     <option value="HIGH">High</option>
@@ -97,34 +92,53 @@ export default function Projects() {
                 </select>
             </div>
 
-            {/* Projects Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Grid */}
+            <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "1rem"
+            }} className="projects-grid">
                 {filteredProjects.length === 0 ? (
-                    <div className="col-span-full text-center py-16">
-                        <div className="w-24 h-24 mx-auto mb-6 bg-gray-200 dark:bg-zinc-800 rounded-full flex items-center justify-center">
-                            <FolderOpen className="w-12 h-12 text-gray-400 dark:text-zinc-500" />
+                    <div style={{
+                        gridColumn: "1 / -1",
+                        textAlign: "center", padding: "5rem 2rem"
+                    }}>
+                        <div style={{
+                            width: 72, height: 72, borderRadius: "var(--radius-full)",
+                            background: "var(--bg-elevated)",
+                            border: "1px solid var(--border)",
+                            display: "flex", alignItems: "center",
+                            justifyContent: "center", margin: "0 auto 1.25rem"
+                        }}>
+                            <FolderOpen size={28} strokeWidth={1} style={{ color: "var(--fg-muted)" }} />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                        <h3 style={{
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            fontWeight: 600, fontSize: "1rem",
+                            color: "var(--fg)", marginBottom: "0.5rem"
+                        }}>
                             No projects found
                         </h3>
-                        <p className="text-gray-500 dark:text-zinc-400 mb-6 text-sm">
-                            Create your first project to get started
+                        <p style={{ fontSize: "0.875rem", color: "var(--fg-muted)", marginBottom: "1.5rem" }}>
+                            {searchTerm ? "Try adjusting your search" : "Create your first project to get started"}
                         </p>
-                        <button
-                            onClick={() => setIsDialogOpen(true)}
-                            className="flex items-center gap-1.5 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mx-auto text-sm"
-                        >
-                            <Plus className="size-4" />
-                            Create Project
+                        <button onClick={() => setIsDialogOpen(true)} className="btn btn-primary btn-sm">
+                            <Plus size={13} /> Create Project
                         </button>
                     </div>
                 ) : (
-                    filteredProjects.map((project) => (
-                        // ✅ use _id (MongoDB) with fallback to id
+                    filteredProjects.map(project => (
                         <ProjectCard key={project._id || project.id} project={project} />
                     ))
                 )}
             </div>
+
+            <CreateProjectDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
+
+            <style>{`
+                @media (max-width: 1024px) { .projects-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+                @media (max-width: 640px)  { .projects-grid { grid-template-columns: 1fr !important; } }
+            `}</style>
         </div>
-    );
+    )
 }
