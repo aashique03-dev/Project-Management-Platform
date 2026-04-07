@@ -9,21 +9,22 @@ import commentRouter from "./routes/comment.routes.js";
 
 const app = express()
 
-
-//Basic configuration
-app.use(express.json({ limit: "16kb" }))
-app.use(express.urlencoded({ extended: true, limit: "16kb" }))
-app.use(express.static("public"))
-app.use(cookieParser())
-
-
-// cors configuration
-app.use(cors({
+// ✅ CORS must be FIRST before everything
+const corsOptions = {
     origin: process.env.CORS_ORIGIN?.split(",") || "https://project-flow-nu.vercel.app",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
-}))
+}
+
+app.options("*", cors(corsOptions)) // handle preflight
+app.use(cors(corsOptions))          // handle all requests
+
+// Basic configuration
+app.use(express.json({ limit: "16kb" }))
+app.use(express.urlencoded({ extended: true, limit: "16kb" }))
+app.use(express.static("public"))
+app.use(cookieParser())
 
 app.use("/api/v1/healthcheck", healthCheckRouter);
 app.use("/api/v1/auth", authRoute);
@@ -31,13 +32,10 @@ app.use("/api/v1/projects", projectRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/comments", commentRouter);
 
-
-
 app.get("/", (req, res) => {
     console.log("Hello world");
     res.json({ message: "Hello" })
 })
-
 
 app.use((err, req, res, next) => {
     res.status(err.statusCode || 500).json({
