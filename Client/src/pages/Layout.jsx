@@ -13,18 +13,39 @@ const Layout = () => {
         dispatch(loadTheme())
     }, [])
 
-    // ✅ Removed: if (loading) return <Loader2Icon />
-    // That was unmounting the entire layout every time fetchProjects ran,
-    // which unmounted Sidebar, which remounted it, which called fetchProjects
-    // again — causing an infinite loop.
-
     return (
-        <div className="flex bg-white dark:bg-zinc-950 text-gray-900 dark:text-slate-100">
+        <div style={{
+            display: "flex",
+            background: "var(--bg)",
+            color: "var(--fg)",
+            minHeight: "100vh"
+        }}>
+            {/* Ambient background orbs */}
+            <div className="ambient-bg">
+                <div className="ambient-orb ambient-orb-1" />
+                <div className="ambient-orb ambient-orb-2" />
+            </div>
+
             <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-            <div className="flex-1 flex flex-col h-screen">
+
+            <div style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                height: "100vh",
+                overflow: "hidden",
+                position: "relative",
+                zIndex: 1
+            }}>
                 <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-                <div className="flex-1 h-full p-6 xl:p-10 xl:px-16 overflow-y-scroll">
-                    <Outlet />
+                <div style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "1.75rem 1.5rem",
+                }}>
+                    <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
+                        <Outlet />
+                    </div>
                 </div>
             </div>
         </div>
