@@ -4,73 +4,70 @@ import { useDispatch } from "react-redux";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { deleteTask, updateTask } from "../features/workspaceSlice";
-import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, XIcon, Zap } from "lucide-react";
+import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, X, Zap } from "lucide-react";
 
 const typeIcons = {
-    BUG: { icon: Bug, color: "text-red-600 dark:text-red-400" },
-    FEATURE: { icon: Zap, color: "text-blue-600 dark:text-blue-400" },
-    TASK: { icon: Square, color: "text-green-600 dark:text-green-400" },
-    IMPROVEMENT: { icon: GitCommit, color: "text-purple-600 dark:text-purple-400" },
-    OTHER: { icon: MessageSquare, color: "text-amber-600 dark:text-amber-400" },
+    BUG:         { icon: Bug,           color: "#f87171" },
+    FEATURE:     { icon: Zap,           color: "#60a5fa" },
+    TASK:        { icon: Square,        color: "#34d399" },
+    IMPROVEMENT: { icon: GitCommit,     color: "#c084fc" },
+    OTHER:       { icon: MessageSquare, color: "#fbbf24" },
 };
 
-const priorityTexts = {
-    LOW: { background: "bg-red-100 dark:bg-red-950", prioritycolor: "text-red-600 dark:text-red-400" },
-    MEDIUM: { background: "bg-blue-100 dark:bg-blue-950", prioritycolor: "text-blue-600 dark:text-blue-400" },
-    HIGH: { background: "bg-emerald-100 dark:bg-emerald-950", prioritycolor: "text-emerald-600 dark:text-emerald-400" },
+const priorityStyles = {
+    LOW:    { background: "rgba(113,113,122,0.15)", color: "#a1a1aa" },
+    MEDIUM: { background: "rgba(245,158,11,0.12)",  color: "#fbbf24" },
+    HIGH:   { background: "rgba(239,68,68,0.12)",   color: "#f87171" },
 };
 
-// ✅ Safe date formatter — returns "-" if date is missing or invalid
+const statusStyles = {
+    todo:        { label: "To Do",       background: "rgba(113,113,122,0.15)", color: "#a1a1aa" },
+    in_progress: { label: "In Progress", background: "rgba(245,158,11,0.12)",  color: "#fbbf24" },
+    done:        { label: "Done",        background: "rgba(52,211,153,0.12)",  color: "#34d399" },
+};
+
 const formatDate = (date) => {
-    if (!date) return "-";
+    if (!date) return "—";
     const d = new Date(date);
-    if (isNaN(d.getTime())) return "-";
-    return format(d, "dd MMMM");
+    if (isNaN(d.getTime())) return "—";
+    return format(d, "dd MMM");
 };
 
 const ProjectTasks = ({ tasks }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [selectedTasks, setSelectedTasks] = useState([]);
-
-    const [filters, setFilters] = useState({
-        status: "",
-        type: "",
-        priority: "",
-        assignee: "",
-    });
+    const [filters, setFilters] = useState({ status: "", type: "", priority: "", assignee: "" });
 
     const assigneeList = useMemo(
-        () => Array.from(new Set(tasks.map((t) => t.assignee?.name).filter(Boolean))),
+        () => Array.from(new Set(tasks.map(t => t.assignee?.name).filter(Boolean))),
         [tasks]
     );
 
-    const filteredTasks = useMemo(() => {
-        return tasks.filter((task) => {
-            const { status, type, priority, assignee } = filters;
-            return (
-                (!status || task.status === status) &&
-                (!type || task.type === type) &&
-                (!priority || task.priority === priority) &&
-                (!assignee || task.assignee?.name === assignee)
-            );
-        });
-    }, [filters, tasks]);
+    const filteredTasks = useMemo(() => tasks.filter(task => {
+        const { status, type, priority, assignee } = filters;
+        return (
+            (!status   || task.status         === status)   &&
+            (!type     || task.type           === type)     &&
+            (!priority || task.priority       === priority) &&
+            (!assignee || task.assignee?.name === assignee)
+        );
+    }), [filters, tasks]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
-        setFilters((prev) => ({ ...prev, [name]: value }));
+        setFilters(prev => ({ ...prev, [name]: value }));
     };
 
     const handleStatusChange = async (taskId, newStatus) => {
         try {
             toast.loading("Updating status...");
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            let updatedTask = structuredClone(tasks.find((t) => t._id === taskId || t.id === taskId));
+            await new Promise(r => setTimeout(r, 1000));
+            const updatedTask = structuredClone(tasks.find(t => t._id === taskId || t.id === taskId));
             updatedTask.status = newStatus;
             dispatch(updateTask(updatedTask));
             toast.dismiss();
-            toast.success("Task status updated successfully");
+            toast.success("Status updated");
         } catch (error) {
             toast.dismiss();
             toast.error(error?.response?.data?.message || error.message);
@@ -78,235 +75,308 @@ const ProjectTasks = ({ tasks }) => {
     };
 
     const handleDelete = async () => {
+        if (!window.confirm("Delete selected tasks?")) return;
         try {
-            const confirm = window.confirm("Are you sure you want to delete the selected tasks?");
-            if (!confirm) return;
-            toast.loading("Deleting tasks...");
+            toast.loading("Deleting...");
             for (const taskId of selectedTasks) {
                 const taskObj = tasks.find(t => t.id === taskId || t._id === taskId);
-                if (taskObj) {
-                    await dispatch(deleteTask({ taskId, projectId: taskObj.projectId })).unwrap();
-                }
+                if (taskObj) await dispatch(deleteTask({ taskId, projectId: taskObj.projectId })).unwrap();
             }
             setSelectedTasks([]);
             toast.dismiss();
-            toast.success("Tasks deleted successfully");
+            toast.success("Tasks deleted");
         } catch (error) {
             toast.dismiss();
-            toast.error(error?.message || "Failed to delete tasks");
+            toast.error(error?.message || "Failed to delete");
         }
+    };
+
+    const filterSelectStyle = {
+        background: "var(--bg-elevated)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        color: "var(--fg)",
+        fontSize: "0.8rem",
+        padding: "0.4rem 0.75rem",
+        outline: "none",
+        cursor: "pointer",
+        fontFamily: "'Inter', sans-serif",
+        colorScheme: "dark",
+    };
+
+    const getStatusSelectStyle = (status) => {
+        const s = statusStyles[status] || statusStyles.todo;
+        return {
+            background: s.background,
+            color: s.color,
+            border: `1px solid ${s.color}30`,
+            borderRadius: "var(--radius-md)",
+            fontSize: "0.75rem",
+            fontWeight: 500,
+            padding: "0.3rem 0.6rem",
+            outline: "none",
+            cursor: "pointer",
+            fontFamily: "'Inter', sans-serif",
+            colorScheme: "dark",
+            minWidth: "8rem",
+        };
     };
 
     return (
         <div>
             {/* Filters */}
-            <div className="flex flex-wrap gap-4 mb-4">
-                {["status", "type", "priority", "assignee"].map((name) => {
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1.25rem" }}>
+                {["status", "type", "priority", "assignee"].map(name => {
                     const options = {
-                        status: [
-                            { label: "All Statuses", value: "" },
-                            { label: "To Do", value: "todo" },           // ✅ lowercase
-                            { label: "In Progress", value: "in_progress" }, // ✅ lowercase
-                            { label: "Done", value: "done" },            // ✅ lowercase
-                        ],
-                        type: [
-                            { label: "All Types", value: "" },
-                            { label: "Task", value: "TASK" },
-                            { label: "Bug", value: "BUG" },
-                            { label: "Feature", value: "FEATURE" },
-                            { label: "Improvement", value: "IMPROVEMENT" },
-                            { label: "Other", value: "OTHER" },
-                        ],
-                        priority: [
-                            { label: "All Priorities", value: "" },
-                            { label: "Low", value: "LOW" },
-                            { label: "Medium", value: "MEDIUM" },
-                            { label: "High", value: "HIGH" },
-                        ],
-                        assignee: [
-                            { label: "All Assignees", value: "" },
-                            ...assigneeList.map((n) => ({ label: n, value: n })),
-                        ],
+                        status:   [{ label: "All Statuses", value: "" }, { label: "To Do", value: "todo" }, { label: "In Progress", value: "in_progress" }, { label: "Done", value: "done" }],
+                        type:     [{ label: "All Types", value: "" }, { label: "Task", value: "TASK" }, { label: "Bug", value: "BUG" }, { label: "Feature", value: "FEATURE" }, { label: "Improvement", value: "IMPROVEMENT" }, { label: "Other", value: "OTHER" }],
+                        priority: [{ label: "All Priorities", value: "" }, { label: "Low", value: "LOW" }, { label: "Medium", value: "MEDIUM" }, { label: "High", value: "HIGH" }],
+                        assignee: [{ label: "All Assignees", value: "" }, ...assigneeList.map(n => ({ label: n, value: n }))],
                     };
                     return (
-                        <select key={name} name={name} onChange={handleFilterChange} className="border not-dark:bg-white border-zinc-300 dark:border-zinc-800 outline-none px-3 py-1 rounded text-sm text-zinc-900 dark:text-zinc-200">
-                            {options[name].map((opt, idx) => (
-                                <option key={idx} value={opt.value}>{opt.label}</option>
+                        <select key={name} name={name} onChange={handleFilterChange} style={filterSelectStyle}>
+                            {options[name].map((opt, i) => (
+                                <option key={i} value={opt.value}>{opt.label}</option>
                             ))}
                         </select>
                     );
                 })}
 
-                {(filters.status || filters.type || filters.priority || filters.assignee) && (
-                    <button type="button" onClick={() => setFilters({ status: "", type: "", priority: "", assignee: "" })} className="px-3 py-1 flex items-center gap-2 rounded bg-gradient-to-br from-purple-400 to-purple-500 text-zinc-100 dark:text-zinc-200 text-sm transition-colors">
-                        <XIcon className="size-3" /> Reset
+                {Object.values(filters).some(Boolean) && (
+                    <button
+                        onClick={() => setFilters({ status: "", type: "", priority: "", assignee: "" })}
+                        style={{ ...filterSelectStyle, display: "flex", alignItems: "center", gap: "0.375rem", border: "1px solid var(--border)" }}
+                    >
+                        <X size={12} /> Reset
                     </button>
                 )}
 
                 {selectedTasks.length > 0 && (
-                    <button type="button" onClick={handleDelete} className="px-3 py-1 flex items-center gap-2 rounded bg-gradient-to-br from-indigo-400 to-indigo-500 text-zinc-100 dark:text-zinc-200 text-sm transition-colors">
-                        <Trash className="size-3" /> Delete
+                    <button
+                        onClick={handleDelete}
+                        style={{
+                            display: "flex", alignItems: "center", gap: "0.375rem",
+                            background: "rgba(239,68,68,0.12)", color: "#f87171",
+                            border: "1px solid rgba(239,68,68,0.2)",
+                            borderRadius: "var(--radius-md)", fontSize: "0.8rem",
+                            padding: "0.4rem 0.75rem", cursor: "pointer",
+                            fontFamily: "'Inter', sans-serif"
+                        }}
+                    >
+                        <Trash size={12} /> Delete ({selectedTasks.length})
                     </button>
                 )}
             </div>
 
-            {/* Tasks Table */}
-            <div className="overflow-auto rounded-lg lg:border border-zinc-300 dark:border-zinc-800">
-                <div className="w-full">
-                    {/* Desktop/Table View */}
-                    <div className="hidden lg:block overflow-x-auto">
-                        <table className="min-w-full text-sm text-left not-dark:bg-white text-zinc-900 dark:text-zinc-300">
-                            <thead className="text-xs uppercase dark:bg-zinc-800/70 text-zinc-500 dark:text-zinc-400">
-                                <tr>
-                                    <th className="pl-2 pr-1">
+            {/* Desktop Table */}
+            <div className="table-wrapper" id="tasks-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style={{ width: "2.5rem" }}>
+                                <input
+                                    type="checkbox"
+                                    onChange={() => selectedTasks.length === tasks.length
+                                        ? setSelectedTasks([])
+                                        : setSelectedTasks(tasks.map(t => t._id || t.id))
+                                    }
+                                    checked={selectedTasks.length === tasks.length && tasks.length > 0}
+                                />
+                            </th>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Assignee</th>
+                            <th>Due</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredTasks.length > 0 ? filteredTasks.map(task => {
+                            const taskId = task._id || task.id;
+                            const typeInfo = typeIcons[task.type] || typeIcons.OTHER;
+                            const TypeIcon = typeInfo.icon;
+                            const pStyle = priorityStyles[task.priority] || {};
+
+                            return (
+                                <tr
+                                    key={taskId}
+                                    onClick={() => navigate(`/taskDetails?projectId=${task.project || task.projectId}&taskId=${taskId}`)}
+                                    style={{ cursor: "pointer" }}
+                                >
+                                    <td onClick={e => e.stopPropagation()}>
                                         <input
-                                            onChange={() => selectedTasks.length > 1 ? setSelectedTasks([]) : setSelectedTasks(tasks.map((t) => t._id || t.id))}
-                                            checked={selectedTasks.length === tasks.length && tasks.length > 0}
                                             type="checkbox"
-                                            className="size-3 accent-zinc-600 dark:accent-zinc-500"
+                                            checked={selectedTasks.includes(taskId)}
+                                            onChange={() => selectedTasks.includes(taskId)
+                                                ? setSelectedTasks(selectedTasks.filter(i => i !== taskId))
+                                                : setSelectedTasks(prev => [...prev, taskId])
+                                            }
                                         />
-                                    </th>
-                                    <th className="px-4 pl-0 py-3">Title</th>
-                                    <th className="px-4 py-3">Type</th>
-                                    <th className="px-4 py-3">Priority</th>
-                                    <th className="px-4 py-3">Status</th>
-                                    <th className="px-4 py-3">Assignee</th>
-                                    <th className="px-4 py-3">Due Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredTasks.length > 0 ? (
-                                    filteredTasks.map((task) => {
-                                        const taskId = task._id || task.id;
-                                        const { icon: Icon, color } = typeIcons[task.type] || {};
-                                        const { background, prioritycolor } = priorityTexts[task.priority] || {};
-
-                                        return (
-                                            <tr
-                                                key={taskId}
-                                                onClick={() => navigate(`/taskDetails?projectId=${task.project || task.projectId}&taskId=${taskId}`)}
-                                                className="border-t border-zinc-300 dark:border-zinc-800 group hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all cursor-pointer"
-                                            >
-                                                <td onClick={e => e.stopPropagation()} className="pl-2 pr-1">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="size-3 accent-zinc-600 dark:accent-zinc-500"
-                                                        onChange={() => selectedTasks.includes(taskId) ? setSelectedTasks(selectedTasks.filter((i) => i !== taskId)) : setSelectedTasks((prev) => [...prev, taskId])}
-                                                        checked={selectedTasks.includes(taskId)}
-                                                    />
-                                                </td>
-                                                <td className="px-4 pl-0 py-2">{task.title}</td>
-                                                <td className="px-4 py-2">
-                                                    <div className="flex items-center gap-2">
-                                                        {Icon && <Icon className={`size-4 ${color}`} />}
-                                                        <span className={`uppercase text-xs ${color}`}>{task.type}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <span className={`text-xs px-2 py-1 rounded ${background} ${prioritycolor}`}>
-                                                        {task.priority}
-                                                    </span>
-                                                </td>
-                                                <td onClick={e => e.stopPropagation()} className="px-4 py-2">
-                                                    <select
-                                                        name="status"
-                                                        onChange={(e) => handleStatusChange(taskId, e.target.value)}
-                                                        value={task.status}
-                                                        className="group-hover:ring ring-zinc-100 outline-none px-2 pr-4 py-1 rounded text-sm text-zinc-900 dark:text-zinc-200 cursor-pointer"
-                                                    >
-                                                        <option value="todo">To Do</option>
-                                                        <option value="in_progress">In Progress</option>
-                                                        <option value="done">Done</option>
-                                                    </select>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <img src={task.assignee?.image} className="size-5 rounded-full" alt="avatar" />
-                                                        {task.assignee?.name || "-"}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <div className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400">
-                                                        <CalendarIcon className="size-4" />
-                                                        {/* ✅ Safe date format */}
-                                                        {formatDate(task.dueDate || task.due_date)}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan="7" className="text-center text-zinc-500 dark:text-zinc-400 py-6">
-                                            No tasks found for the selected filters.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Mobile/Card View */}
-                    <div className="lg:hidden flex flex-col gap-4">
-                        {filteredTasks.length > 0 ? (
-                            filteredTasks.map((task) => {
-                                const taskId = task._id || task.id;
-                                const { icon: Icon, color } = typeIcons[task.type] || {};
-                                const { background, prioritycolor } = priorityTexts[task.priority] || {};
-
-                                return (
-                                    <div key={taskId} className="dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4 flex flex-col gap-2">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-zinc-900 dark:text-zinc-200 text-sm font-semibold">{task.title}</h3>
-                                            <input
-                                                type="checkbox"
-                                                className="size-4 accent-zinc-600 dark:accent-zinc-500"
-                                                onChange={() => selectedTasks.includes(taskId) ? setSelectedTasks(selectedTasks.filter((i) => i !== taskId)) : setSelectedTasks((prev) => [...prev, taskId])}
-                                                checked={selectedTasks.includes(taskId)}
-                                            />
-                                        </div>
-                                        <div className="text-xs text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                                            {Icon && <Icon className={`size-4 ${color}`} />}
-                                            <span className={`${color} uppercase`}>{task.type}</span>
-                                        </div>
-                                        <div>
-                                            <span className={`text-xs px-2 py-1 rounded ${background} ${prioritycolor}`}>
-                                                {task.priority}
+                                    </td>
+                                    <td style={{ fontWeight: 500, color: "var(--fg)" }}>{task.title}</td>
+                                    <td>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                            <TypeIcon size={14} strokeWidth={1.5} style={{ color: typeInfo.color }} />
+                                            <span style={{ fontSize: "0.72rem", color: typeInfo.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
+                                                {task.type}
                                             </span>
                                         </div>
-                                        <div>
-                                            <label className="text-zinc-600 dark:text-zinc-400 text-xs">Status</label>
-                                            <select
-                                                name="status"
-                                                onChange={(e) => handleStatusChange(taskId, e.target.value)}
-                                                value={task.status}
-                                                className="w-full mt-1 bg-zinc-100 dark:bg-zinc-800 ring-1 ring-zinc-300 dark:ring-zinc-700 outline-none px-2 py-1 rounded text-sm text-zinc-900 dark:text-zinc-200"
-                                            >
-                                                <option value="todo">To Do</option>
-                                                <option value="in_progress">In Progress</option>
-                                                <option value="done">Done</option>
-                                            </select>
+                                    </td>
+                                    <td>
+                                        <span style={{
+                                            fontSize: "0.68rem", fontWeight: 600,
+                                            padding: "0.2rem 0.55rem", borderRadius: "var(--radius-full)",
+                                            background: pStyle.background, color: pStyle.color,
+                                            fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.04em"
+                                        }}>
+                                            {task.priority}
+                                        </span>
+                                    </td>
+                                    <td onClick={e => e.stopPropagation()}>
+                                        {/* ✅ Dark-themed status select — no browser white popup */}
+                                        <select
+                                            value={task.status}
+                                            onChange={e => handleStatusChange(taskId, e.target.value)}
+                                            style={getStatusSelectStyle(task.status)}
+                                        >
+                                            <option value="todo">To Do</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="done">Done</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                            {task.assignee?.image
+                                                ? <img src={task.assignee.image} style={{ width: 20, height: 20, borderRadius: "50%" }} alt="" />
+                                                : <div style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--bg-elevated)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", color: "var(--fg-muted)" }}>?</div>
+                                            }
+                                            <span style={{ fontSize: "0.8rem", color: "var(--fg-muted)" }}>
+                                                {task.assignee?.name || "—"}
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                                            <img src={task.assignee?.image} className="size-5 rounded-full" alt="avatar" />
-                                            {task.assignee?.name || "-"}
+                                    </td>
+                                    <td>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", color: "var(--fg-muted)" }}>
+                                            <CalendarIcon size={13} strokeWidth={1.5} />
+                                            <span style={{ fontSize: "0.75rem", fontFamily: "'JetBrains Mono', monospace" }}>
+                                                {formatDate(task.dueDate || task.due_date)}
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                            <CalendarIcon className="size-4" />
-                                            {/* ✅ Safe date format */}
-                                            {formatDate(task.dueDate || task.due_date)}
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        ) : (
-                            <p className="text-center text-zinc-500 dark:text-zinc-400 py-4">
-                                No tasks found for the selected filters.
-                            </p>
+                                    </td>
+                                </tr>
+                            );
+                        }) : (
+                            <tr>
+                                <td colSpan="7" style={{ textAlign: "center", color: "var(--fg-muted)", padding: "3rem", fontSize: "0.875rem" }}>
+                                    No tasks match the selected filters.
+                                </td>
+                            </tr>
                         )}
-                    </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
+
+            {/* Mobile Cards */}
+            <div id="tasks-cards" style={{ display: "none", flexDirection: "column", gap: "0.75rem" }}>
+                {filteredTasks.length > 0 ? filteredTasks.map(task => {
+                    const taskId = task._id || task.id;
+                    const typeInfo = typeIcons[task.type] || typeIcons.OTHER;
+                    const TypeIcon = typeInfo.icon;
+                    const pStyle = priorityStyles[task.priority] || {};
+
+                    return (
+                        <div
+                            key={taskId}
+                            onClick={() => navigate(`/taskDetails?projectId=${task.project || task.projectId}&taskId=${taskId}`)}
+                            style={{
+                                background: "var(--card)", border: "1px solid var(--border)",
+                                borderRadius: "var(--radius-lg)", padding: "1rem",
+                                display: "flex", flexDirection: "column", gap: "0.625rem",
+                                cursor: "pointer", transition: "background 200ms"
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
+                            onMouseLeave={e => e.currentTarget.style.background = "var(--card)"}
+                        >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                <h3 style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--fg)" }}>{task.title}</h3>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedTasks.includes(taskId)}
+                                    onClick={e => e.stopPropagation()}
+                                    onChange={() => selectedTasks.includes(taskId)
+                                        ? setSelectedTasks(selectedTasks.filter(i => i !== taskId))
+                                        : setSelectedTasks(prev => [...prev, taskId])
+                                    }
+                                />
+                            </div>
+
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                <TypeIcon size={13} strokeWidth={1.5} style={{ color: typeInfo.color }} />
+                                <span style={{ fontSize: "0.72rem", color: typeInfo.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
+                                    {task.type}
+                                </span>
+                                <span style={{
+                                    marginLeft: "auto",
+                                    fontSize: "0.65rem", fontWeight: 600,
+                                    padding: "0.15rem 0.5rem", borderRadius: "var(--radius-full)",
+                                    background: pStyle.background, color: pStyle.color,
+                                    fontFamily: "'JetBrains Mono', monospace"
+                                }}>
+                                    {task.priority}
+                                </span>
+                            </div>
+
+                            <div onClick={e => e.stopPropagation()}>
+                                <label style={{ fontSize: "0.65rem", color: "var(--fg-muted)", display: "block", marginBottom: "0.25rem", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                                    Status
+                                </label>
+                                <select
+                                    value={task.status}
+                                    onChange={e => handleStatusChange(taskId, e.target.value)}
+                                    style={{ ...getStatusSelectStyle(task.status), width: "100%" }}
+                                >
+                                    <option value="todo">To Do</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="done">Done</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                                    {task.assignee?.image
+                                        ? <img src={task.assignee.image} style={{ width: 18, height: 18, borderRadius: "50%" }} alt="" />
+                                        : <div style={{ width: 18, height: 18, borderRadius: "50%", background: "var(--bg-elevated)", border: "1px solid var(--border)" }} />
+                                    }
+                                    <span style={{ fontSize: "0.78rem", color: "var(--fg-muted)" }}>{task.assignee?.name || "Unassigned"}</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--fg-muted)" }}>
+                                    <CalendarIcon size={12} strokeWidth={1.5} />
+                                    <span style={{ fontSize: "0.75rem", fontFamily: "'JetBrains Mono', monospace" }}>
+                                        {formatDate(task.dueDate || task.due_date)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }) : (
+                    <p style={{ textAlign: "center", color: "var(--fg-muted)", padding: "2rem", fontSize: "0.875rem" }}>
+                        No tasks match the selected filters.
+                    </p>
+                )}
+            </div>
+
+            <style>{`
+                @media (max-width: 768px) {
+                    #tasks-table { display: none !important; }
+                    #tasks-cards { display: flex !important; }
+                }
+                /* Force dark background on all select option dropdowns */
+                select option {
+                    background-color: #1A1A24 !important;
+                    color: #FAFAFA !important;
+                }
+            `}</style>
         </div>
     );
 };

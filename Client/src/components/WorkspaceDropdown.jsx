@@ -1,133 +1,169 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check, Plus, Loader2Icon } from "lucide-react";
+import { ChevronDown, Check, Plus, Loader2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentWorkspace, fetchWorkspaces } from "../features/workspaceSlice";
 import { useNavigate } from "react-router-dom";
 
 const WorkspaceDropdown = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { list: workspaces = [], current: currentWorkspace, loading } = useSelector(state => state.workspace);
 
-  // list = all workspaces, current = selected workspace
-  const {
-    list: workspaces = [],
-    current: currentWorkspace,
-    loading,
-  } = useSelector((state) => state.workspace);
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
 
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
+    useEffect(() => { dispatch(fetchWorkspaces()); }, [dispatch]);
 
-  // Fetch workspaces on mount
-  useEffect(() => {
-    dispatch(fetchWorkspaces());
-  }, [dispatch]);
+    useEffect(() => {
+        const handler = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setIsOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const onSelect = (id) => {
+        dispatch(setCurrentWorkspace(id));
         setIsOpen(false);
-      }
+        navigate("/");
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
-  const onSelectWorkspace = (workspaceId) => {
-    dispatch(setCurrentWorkspace(workspaceId));
-    setIsOpen(false);
-    navigate("/");
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <Loader2Icon className="w-6 h-6 text-blue-500 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!workspaces.length) {
-    return (
-      <div className="p-4 text-sm text-gray-500 dark:text-zinc-400">
-        No workspaces available
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative m-4" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="w-full flex items-center justify-between p-3 h-auto text-left rounded hover:bg-gray-100 dark:hover:bg-zinc-800"
-      >
-        <div className="flex items-center gap-3">
-          {currentWorkspace?.image_url && (
-            <img
-              src={currentWorkspace.image_url}
-              alt={currentWorkspace.name}
-              className="w-8 h-8 rounded shadow"
-            />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-gray-800 dark:text-white text-sm truncate">
-              {currentWorkspace?.name || "Select Workspace"}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">
-              {workspaces.length} workspace{workspaces.length !== 1 ? "s" : ""}
-            </p>
-          </div>
+    if (loading) return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+            <Loader2 size={18} strokeWidth={1.5} style={{ color: "var(--accent)", animation: "spin 0.8s linear infinite" }} />
         </div>
-        <ChevronDown className="w-4 h-4 text-gray-500 dark:text-zinc-400 flex-shrink-0" />
-      </button>
+    );
 
-      {isOpen && (
-        <div className="absolute z-50 w-64 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded shadow-lg top-full left-0">
-          <div className="p-2">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2 px-2">
-              Workspaces
-            </p>
-            {workspaces.map((ws) => (
-              <div
-                key={ws._id || ws.id}
-                onClick={() => onSelectWorkspace(ws._id || ws.id)}
-                className="flex items-center gap-3 p-2 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-zinc-800"
-              >
-                {ws.image_url && (
-                  <img
-                    src={ws.image_url}
-                    alt={ws.name}
-                    className="w-6 h-6 rounded"
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 dark:text-white truncate">
-                    {ws.name}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">
-                    {ws.membersCount || 0} members
-                  </p>
+    if (!workspaces.length) return (
+        <div style={{ padding: "1rem", fontSize: "0.8rem", color: "var(--fg-muted)", textAlign: "center" }}>
+            No workspaces available
+        </div>
+    );
+
+    return (
+        <div style={{ position: "relative", padding: "0.625rem" }} ref={dropdownRef}>
+            <button
+                onClick={() => setIsOpen(p => !p)}
+                style={{
+                    width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "0.625rem 0.75rem",
+                    borderRadius: "var(--radius-md)",
+                    background: "transparent",
+                    border: "1px solid var(--border)",
+                    cursor: "pointer", transition: "all 200ms ease-out"
+                }}
+                onMouseEnter={e => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.04)"
+                    e.currentTarget.style.borderColor = "var(--border-hover)"
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.background = "transparent"
+                    e.currentTarget.style.borderColor = "var(--border)"
+                }}
+            >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", minWidth: 0, flex: 1 }}>
+                    {currentWorkspace?.image_url && (
+                        <img src={currentWorkspace.image_url} alt={currentWorkspace.name}
+                            style={{ width: 24, height: 24, borderRadius: "var(--radius-sm)", flexShrink: 0 }} />
+                    )}
+                    <div style={{ minWidth: 0, flex: 1, textAlign: "left" }}>
+                        <p style={{
+                            fontSize: "0.8rem", fontWeight: 600,
+                            color: "var(--fg)", overflow: "hidden",
+                            textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            fontFamily: "'Space Grotesk', sans-serif"
+                        }}>
+                            {currentWorkspace?.name || "Select Workspace"}
+                        </p>
+                        <p style={{ fontSize: "0.65rem", color: "var(--fg-muted)", fontFamily: "'JetBrains Mono', monospace" }}>
+                            {workspaces.length} workspace{workspaces.length !== 1 ? "s" : ""}
+                        </p>
+                    </div>
                 </div>
-                {(currentWorkspace?.id === ws.id ||
-                  currentWorkspace?._id === ws._id) && (
-                  <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                )}
-              </div>
-            ))}
-          </div>
+                <ChevronDown size={13} strokeWidth={1.5} style={{
+                    color: "var(--fg-muted)", flexShrink: 0,
+                    transform: isOpen ? "rotate(180deg)" : "rotate(0)",
+                    transition: "transform 200ms"
+                }} />
+            </button>
 
-          <hr className="border-gray-200 dark:border-zinc-700" />
+            {isOpen && (
+                <div style={{
+                    position: "absolute", top: "calc(100% - 0.25rem)", left: "0.625rem", right: "0.625rem",
+                    background: "var(--bg-alt)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-lg)",
+                    boxShadow: "var(--shadow-lg)",
+                    zIndex: 50, overflow: "hidden",
+                    animation: "slideUp 150ms ease-out"
+                }}>
+                    <div style={{ padding: "0.375rem" }}>
+                        <p style={{
+                            fontSize: "0.65rem", fontWeight: 600,
+                            color: "var(--fg-muted)", textTransform: "uppercase",
+                            letterSpacing: "0.08em", padding: "0.375rem 0.625rem 0.25rem",
+                            fontFamily: "'JetBrains Mono', monospace"
+                        }}>
+                            Workspaces
+                        </p>
+                        {workspaces.map(ws => {
+                            const wsId = ws._id || ws.id;
+                            const isActive = currentWorkspace?.id === ws.id || currentWorkspace?._id === ws._id;
+                            return (
+                                <div
+                                    key={wsId}
+                                    onClick={() => onSelect(wsId)}
+                                    style={{
+                                        display: "flex", alignItems: "center", gap: "0.625rem",
+                                        padding: "0.5rem 0.625rem",
+                                        borderRadius: "var(--radius-md)",
+                                        cursor: "pointer", transition: "background 150ms",
+                                        background: isActive ? "var(--accent-muted)" : "transparent"
+                                    }}
+                                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.04)" }}
+                                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent" }}
+                                >
+                                    {ws.image_url && (
+                                        <img src={ws.image_url} alt={ws.name}
+                                            style={{ width: 22, height: 22, borderRadius: "var(--radius-sm)", flexShrink: 0 }} />
+                                    )}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{
+                                            fontSize: "0.8rem", fontWeight: 500,
+                                            color: isActive ? "var(--accent)" : "var(--fg)",
+                                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                                        }}>
+                                            {ws.name}
+                                        </p>
+                                        <p style={{ fontSize: "0.65rem", color: "var(--fg-muted)", fontFamily: "'JetBrains Mono', monospace" }}>
+                                            {ws.membersCount || 0} members
+                                        </p>
+                                    </div>
+                                    {isActive && <Check size={13} strokeWidth={2} style={{ color: "var(--accent)", flexShrink: 0 }} />}
+                                </div>
+                            );
+                        })}
+                    </div>
 
-          <div className="p-2 cursor-pointer rounded group hover:bg-gray-100 dark:hover:bg-zinc-800">
-            <p className="flex items-center text-xs gap-2 my-1 w-full text-blue-600 dark:text-blue-400 group-hover:text-blue-500 dark:group-hover:text-blue-300">
-              <Plus className="w-4 h-4" /> Create Workspace
-            </p>
-          </div>
+                    <div style={{ borderTop: "1px solid var(--border)", padding: "0.375rem" }}>
+                        <button style={{
+                            display: "flex", alignItems: "center", gap: "0.5rem",
+                            width: "100%", padding: "0.5rem 0.625rem",
+                            borderRadius: "var(--radius-md)",
+                            background: "transparent", border: "none", cursor: "pointer",
+                            fontSize: "0.8rem", color: "var(--accent)", fontWeight: 500,
+                            transition: "background 150ms"
+                        }}
+                            onMouseEnter={e => e.currentTarget.style.background = "var(--accent-muted)"}
+                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                        >
+                            <Plus size={14} strokeWidth={1.5} /> Create Workspace
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default WorkspaceDropdown;

@@ -1,129 +1,150 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar, X } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { format } from "date-fns";
 import { createTask } from "../features/workspaceSlice";
 
 export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }) {
-    const dispatch = useDispatch();
-    const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
-    const project = currentWorkspace?.projects.find((p) => p._id === projectId || p.id === projectId);
-    const teamMembers = Array.isArray(project?.members) ? project.members : [];
+    const dispatch = useDispatch()
+    const currentWorkspace = useSelector(state => state.workspace?.currentWorkspace || null)
+    const project = currentWorkspace?.projects.find(p => p._id === projectId || p.id === projectId)
+    const teamMembers = Array.isArray(project?.members) ? project.members : []
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [formData, setFormData] = useState({
-        title: "",
-        description: "",
-        type: "TASK",
-        status: "todo",
-        priority: "MEDIUM",
-        assigneeId: "",
-        due_date: "",
-    });
+        title: "", description: "", type: "TASK",
+        status: "todo", priority: "MEDIUM", assigneeId: "", due_date: ""
+    })
+
+    const set = (key, val) => setFormData(prev => ({ ...prev, [key]: val }))
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSubmitting(true);
+        e.preventDefault()
+        setIsSubmitting(true)
         try {
-            await dispatch(createTask({ ...formData, projectId })).unwrap();
-            setShowCreateTask(false);
+            await dispatch(createTask({ ...formData, projectId })).unwrap()
+            setShowCreateTask(false)
         } catch (err) {
-            console.error("Failed to create task:", err);
+            console.error(err)
         } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false)
         }
-    };
+    }
 
-    return showCreateTask ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 dark:bg-black/60 backdrop-blur">
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-lg shadow-lg w-full max-w-md p-6 text-zinc-900 dark:text-white">
-                <h2 className="text-xl font-bold mb-4">Create New Task</h2>
+    if (!showCreateTask) return null
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Title */}
-                    <div className="space-y-1">
-                        <label htmlFor="title" className="text-sm font-medium">Title</label>
-                        <input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Task title" className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-                    </div>
+    return (
+        <div className="overlay" onClick={e => e.target === e.currentTarget && setShowCreateTask(false)}>
+            <div className="dialog">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+                    <h2 style={{
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        fontWeight: 700, fontSize: "1.1rem",
+                        letterSpacing: "-0.02em", color: "var(--fg)"
+                    }}>
+                        Create New Task
+                    </h2>
+                    <button onClick={() => setShowCreateTask(false)} className="btn btn-ghost btn-icon">
+                        <X size={16} strokeWidth={1.5} />
+                    </button>
+                </div>
 
-                    {/* Description */}
-                    <div className="space-y-1">
-                        <label htmlFor="description" className="text-sm font-medium">Description</label>
-                        <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Describe the task" className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1 h-24 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+                    <Field label="Title">
+                        <input
+                            value={formData.title}
+                            onChange={e => set("title", e.target.value)}
+                            placeholder="Task title"
+                            className="input" required
+                        />
+                    </Field>
 
-                    {/* Type & Priority */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Type</label>
-                            <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" >
+                    <Field label="Description">
+                        <textarea
+                            value={formData.description}
+                            onChange={e => set("description", e.target.value)}
+                            placeholder="Describe the task..."
+                            className="input"
+                            style={{ height: "5rem", resize: "vertical" }}
+                        />
+                    </Field>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <Field label="Type">
+                            <select value={formData.type} onChange={e => set("type", e.target.value)} className="input">
+                                <option value="TASK">Task</option>
                                 <option value="BUG">Bug</option>
                                 <option value="FEATURE">Feature</option>
-                                <option value="TASK">Task</option>
                                 <option value="IMPROVEMENT">Improvement</option>
                                 <option value="OTHER">Other</option>
                             </select>
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Priority</label>
-                            <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"                             >
+                        </Field>
+                        <Field label="Priority">
+                            <select value={formData.priority} onChange={e => set("priority", e.target.value)} className="input">
                                 <option value="LOW">Low</option>
                                 <option value="MEDIUM">Medium</option>
                                 <option value="HIGH">High</option>
                             </select>
-                        </div>
+                        </Field>
                     </div>
 
-                    {/* Assignee and Status */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Assignee</label>
-                            <select value={formData.assigneeId} onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" >
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <Field label="Assignee">
+                            <select value={formData.assigneeId} onChange={e => set("assigneeId", e.target.value)} className="input">
                                 <option value="">Unassigned</option>
-                                {teamMembers.map((member) => (
-                                    <option key={member?.user.id} value={member?.user.id}>
-                                        {member?.user.email}
-                                    </option>
+                                {teamMembers.map(m => (
+                                    <option key={m?.user.id} value={m?.user.id}>{m?.user.email}</option>
                                 ))}
                             </select>
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Status</label>
-                            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" >
+                        </Field>
+                        <Field label="Status">
+                            <select value={formData.status} onChange={e => set("status", e.target.value)} className="input">
                                 <option value="todo">To Do</option>
                                 <option value="in_progress">In Progress</option>
                                 <option value="done">Done</option>
                             </select>
-                        </div>
+                        </Field>
                     </div>
 
-                    {/* Due Date */}
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium">Due Date</label>
-                        <div className="flex items-center gap-2">
-                            <CalendarIcon className="size-5 text-zinc-500 dark:text-zinc-400" />
-                            <input type="date" value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: e.target.value })} min={new Date().toISOString().split('T')[0]} className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1" />
+                    <Field label="Due Date">
+                        <div style={{ position: "relative" }}>
+                            <Calendar size={14} strokeWidth={1.5} style={{
+                                position: "absolute", left: "0.75rem", top: "50%",
+                                transform: "translateY(-50%)", color: "var(--fg-muted)"
+                            }} />
+                            <input
+                                type="date"
+                                value={formData.due_date}
+                                onChange={e => set("due_date", e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="input"
+                                style={{ paddingLeft: "2.25rem" }}
+                            />
                         </div>
                         {formData.due_date && (
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            <p style={{ fontSize: "0.7rem", color: "var(--fg-muted)", marginTop: "0.25rem", fontFamily: "'JetBrains Mono', monospace" }}>
                                 {format(new Date(formData.due_date), "PPP")}
                             </p>
                         )}
-                    </div>
+                    </Field>
 
-                    {/* Footer */}
-                    <div className="flex justify-end gap-2 pt-2">
-                        <button type="button" onClick={() => setShowCreateTask(false)} className="rounded border border-zinc-300 dark:border-zinc-700 px-5 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition" >
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.625rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border)" }}>
+                        <button type="button" onClick={() => setShowCreateTask(false)} className="btn btn-secondary btn-sm">
                             Cancel
                         </button>
-                        <button type="submit" disabled={isSubmitting} className="rounded px-5 py-2 text-sm bg-gradient-to-br from-blue-500 to-blue-600 hover:opacity-90 text-white dark:text-zinc-200 transition" >
+                        <button type="submit" disabled={isSubmitting} className="btn btn-primary btn-sm">
                             {isSubmitting ? "Creating..." : "Create Task"}
                         </button>
                     </div>
                 </form>
             </div>
         </div>
-    ) : null;
+    )
 }
+
+const Field = ({ label, children }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--fg-muted)" }}>{label}</label>
+        {children}
+    </div>
+)

@@ -2,22 +2,20 @@ import { useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
 import MyTasksSidebar from './MyTasksSidebar'
 import ProjectSidebar from './ProjectsSidebar'
-import { FolderOpenIcon, LayoutDashboardIcon, SettingsIcon, UsersIcon, LayoutGridIcon, Loader2Icon } from 'lucide-react'
+import { FolderOpen, LayoutDashboard, Settings, Users, Zap, Loader2 } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchProjects } from '../features/workspaceSlice'
 
-const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
+const menuItems = [
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Projects', href: '/projects', icon: FolderOpen },
+    { name: 'Team', href: '/team', icon: Users },
+]
 
+const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const dispatch = useDispatch()
     const user = useSelector((state) => state.auth?.user)
     const loading = useSelector((state) => state.workspace.loading)
-
-    const menuItems = [
-        { name: 'Dashboard', href: '/', icon: LayoutDashboardIcon },
-        { name: 'Projects', href: '/projects', icon: FolderOpenIcon },
-        { name: 'Team', href: '/team', icon: UsersIcon },
-    ]
-
     const sidebarRef = useRef(null)
 
     useEffect(() => {
@@ -25,75 +23,161 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }, [dispatch])
 
     useEffect(() => {
-        function handleClickOutside(event) {
-            if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        const handler = (e) => {
+            if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
                 setIsSidebarOpen(false)
             }
         }
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
     }, [setIsSidebarOpen])
 
     return (
-        <div
+        <aside
             ref={sidebarRef}
-            className={`z-10 bg-white dark:bg-zinc-900 min-w-68 flex flex-col h-screen border-r border-gray-200 dark:border-zinc-800 max-sm:absolute transition-all ${isSidebarOpen ? 'left-0' : '-left-full'}`}
+            style={{
+                width: "16rem",
+                minWidth: "16rem",
+                background: "rgba(18, 18, 26, 0.95)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                borderRight: "1px solid var(--border)",
+                display: "flex",
+                flexDirection: "column",
+                height: "100vh",
+                flexShrink: 0,
+                position: "relative",
+                zIndex: 20,
+                transition: "transform 300ms ease-out"
+            }}
+            className={`sidebar-root ${isSidebarOpen ? 'sidebar-open' : ''}`}
         >
-            {/* Workspace Header */}
-            <div className="flex items-center gap-3 m-4 p-3 rounded-lg bg-gray-50 dark:bg-zinc-800">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                    <LayoutGridIcon className="w-4 h-4 text-white" />
+            {/* Logo / Workspace header */}
+            <div style={{
+                padding: "1.125rem 1rem",
+                borderBottom: "1px solid var(--border)",
+                display: "flex", alignItems: "center", gap: "0.625rem"
+            }}>
+                <div style={{
+                    width: 32, height: 32, borderRadius: "var(--radius-md)",
+                    background: "linear-gradient(135deg, var(--accent), #D97706)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0, boxShadow: "var(--glow-sm)"
+                }}>
+                    <Zap size={16} color="var(--accent-fg)" strokeWidth={2.5} />
                 </div>
-                <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-800 dark:text-white text-sm truncate">
-                        {user?.fullName || 'My Workspace'}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        fontWeight: 700, fontSize: "0.9rem",
+                        letterSpacing: "-0.02em", color: "var(--fg)",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                    }}>
+                        ProjectFlow
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">
+                    <p style={{
+                        fontSize: "0.7rem", color: "var(--fg-muted)",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        fontFamily: "'JetBrains Mono', monospace"
+                    }}>
                         {user?.email || 'Personal workspace'}
                     </p>
                 </div>
             </div>
 
-            <hr className="border-gray-200 dark:border-zinc-800" />
+            {/* Nav */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "0.75rem 0.625rem" }}
+                className="no-scrollbar">
 
-            <div className="flex-1 overflow-y-scroll no-scrollbar flex flex-col">
-                <div>
-                    <div className="p-4">
-                        {menuItems.map((item) => (
-                            <NavLink
-                                to={item.href}
-                                key={item.name}
-                                className={({ isActive }) =>
-                                    `flex items-center gap-3 py-2 px-4 text-gray-800 dark:text-zinc-100 cursor-pointer rounded transition-all ${isActive
-                                        ? 'bg-gray-100 dark:bg-gradient-to-br dark:from-zinc-800 dark:to-zinc-800/50'
-                                        : 'hover:bg-gray-50 dark:hover:bg-zinc-800/60'
-                                    }`
-                                }
-                            >
-                                <item.icon size={16} />
-                                <p className="text-sm truncate">{item.name}</p>
-                            </NavLink>
-                        ))}
-                        <button className="flex w-full items-center gap-3 py-2 px-4 text-gray-800 dark:text-zinc-100 cursor-pointer rounded hover:bg-gray-50 dark:hover:bg-zinc-800/60 transition-all">
-                            <SettingsIcon size={16} />
-                            <p className="text-sm truncate">Settings</p>
-                        </button>
-                    </div>
-
-                    {/* ✅ Show spinner inline while loading, don't block the whole UI */}
-                    {loading ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2Icon className="w-5 h-5 text-blue-500 animate-spin" />
-                        </div>
-                    ) : (
-                        <>
-                            <MyTasksSidebar />
-                            <ProjectSidebar />
-                        </>
-                    )}
+                {/* Main nav items */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+                    {menuItems.map((item) => (
+                        <NavLink
+                            key={item.name}
+                            to={item.href}
+                            end={item.href === '/'}
+                            style={({ isActive }) => ({
+                                display: "flex", alignItems: "center", gap: "0.625rem",
+                                padding: "0.5rem 0.75rem",
+                                borderRadius: "var(--radius-md)",
+                                fontSize: "0.875rem", fontWeight: 450,
+                                color: isActive ? "var(--fg)" : "var(--fg-muted)",
+                                background: isActive ? "rgba(255,255,255,0.07)" : "transparent",
+                                textDecoration: "none",
+                                transition: "all 200ms ease-out",
+                                border: "none"
+                            })}
+                            onMouseEnter={e => {
+                                if (!e.currentTarget.classList.contains('active-nav'))
+                                    e.currentTarget.style.background = "rgba(255,255,255,0.04)"
+                            }}
+                            onMouseLeave={e => {
+                                if (!e.currentTarget.getAttribute('aria-current'))
+                                    e.currentTarget.style.background = ""
+                            }}
+                        >
+                            {({ isActive }) => (
+                                <>
+                                    <item.icon
+                                        size={16} strokeWidth={isActive ? 2 : 1.5}
+                                        style={{ color: isActive ? "var(--accent)" : "var(--fg-muted)", flexShrink: 0 }}
+                                    />
+                                    {item.name}
+                                </>
+                            )}
+                        </NavLink>
+                    ))}
+                    <button
+                        style={{
+                            display: "flex", alignItems: "center", gap: "0.625rem",
+                            width: "100%", padding: "0.5rem 0.75rem",
+                            borderRadius: "var(--radius-md)",
+                            fontSize: "0.875rem", fontWeight: 450,
+                            color: "var(--fg-muted)",
+                            background: "transparent", border: "none",
+                            cursor: "pointer", textAlign: "left",
+                            transition: "all 200ms ease-out"
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                        <Settings size={16} strokeWidth={1.5} style={{ color: "var(--fg-muted)", flexShrink: 0 }} />
+                        Settings
+                    </button>
                 </div>
+
+                {/* Divider */}
+                <div style={{ height: "1px", background: "var(--border)", margin: "0.75rem 0" }} />
+
+                {/* Dynamic sections */}
+                {loading ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem 0" }}>
+                        <Loader2 size={18} strokeWidth={1.5} style={{ color: "var(--accent)", animation: "spin 0.8s linear infinite" }} />
+                    </div>
+                ) : (
+                    <>
+                        <MyTasksSidebar />
+                        <ProjectSidebar />
+                    </>
+                )}
             </div>
-        </div>
+
+            <style>{`
+                @media (max-width: 640px) {
+                    .sidebar-root {
+                        position: absolute;
+                        top: 0;
+                        left: -16rem;
+                        height: 100%;
+                        z-index: 50;
+                        box-shadow: var(--shadow-lg);
+                    }
+                    .sidebar-root.sidebar-open {
+                        left: 0;
+                    }
+                }
+            `}</style>
+        </aside>
     )
 }
 

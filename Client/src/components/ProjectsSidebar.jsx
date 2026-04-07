@@ -1,79 +1,120 @@
 import { useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { ChevronRightIcon, SettingsIcon, KanbanIcon, ChartColumnIcon, CalendarIcon, ArrowRightIcon } from 'lucide-react';
+import { ChevronRight, Settings, Kanban, BarChart2, Calendar, ArrowRight } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
+const getSubItems = (projectId) => [
+    { title: 'Tasks',     icon: Kanban,   url: `/projectsDetail?id=${projectId}&tab=tasks`     },
+    { title: 'Analytics', icon: BarChart2, url: `/projectsDetail?id=${projectId}&tab=analytics` },
+    { title: 'Calendar',  icon: Calendar,  url: `/projectsDetail?id=${projectId}&tab=calendar`  },
+    { title: 'Settings',  icon: Settings,  url: `/projectsDetail?id=${projectId}&tab=settings`  },
+];
+
 const ProjectSidebar = () => {
-
     const location = useLocation();
-    const [expandedProjects, setExpandedProjects] = useState(new Set());
     const [searchParams] = useSearchParams();
+    const [expanded, setExpanded] = useState(new Set());
 
-    const projects = useSelector(
-        (state) => state?.workspace?.currentWorkspace?.projects || []
-    );
+    const projects = useSelector(state => state?.workspace?.currentWorkspace?.projects || []);
 
-    const getProjectSubItems = (projectId) => [
-        { title: 'Tasks', icon: KanbanIcon, url: `/projectsDetail?id=${projectId}&tab=tasks` },
-        { title: 'Analytics', icon: ChartColumnIcon, url: `/projectsDetail?id=${projectId}&tab=analytics` },
-        { title: 'Calendar', icon: CalendarIcon, url: `/projectsDetail?id=${projectId}&tab=calendar` },
-        { title: 'Settings', icon: SettingsIcon, url: `/projectsDetail?id=${projectId}&tab=settings` }
-    ];
-
-    const toggleProject = (id) => {
-        const newSet = new Set(expandedProjects);
-        newSet.has(id) ? newSet.delete(id) : newSet.add(id);
-        setExpandedProjects(newSet);
+    const toggle = (id) => {
+        const next = new Set(expanded);
+        next.has(id) ? next.delete(id) : next.add(id);
+        setExpanded(next);
     };
 
     return (
-        <div className="mt-6 px-3">
-            <div className="flex items-center justify-between px-3 py-2">
-                <h3 className="text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+        <div>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.375rem 0.75rem", marginBottom: "0.25rem" }}>
+                <span style={{
+                    fontSize: "0.65rem", fontWeight: 600,
+                    color: "var(--fg-muted)", textTransform: "uppercase",
+                    letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace"
+                }}>
                     Projects
-                </h3>
+                </span>
                 <Link to="/projects">
-                    <button className="size-5 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 rounded flex items-center justify-center transition-colors duration-200">
-                        <ArrowRightIcon className="size-3" />
+                    <button className="btn btn-ghost btn-icon" style={{ width: 22, height: 22, padding: 0 }} aria-label="All projects">
+                        <ArrowRight size={12} strokeWidth={1.5} />
                     </button>
                 </Link>
             </div>
 
-            <div className="space-y-1 px-3">
-                {projects.map((project) => {
-                    // ✅ MongoDB uses _id, fall back to id if needed
+            {/* Project list */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+                {projects.map(project => {
                     const projectId = project._id || project.id;
+                    const isExpanded = expanded.has(projectId);
+                    const subItems = getSubItems(projectId);
 
                     return (
                         <div key={projectId}>
                             <button
-                                onClick={() => toggleProject(projectId)}
-                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200 text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white"
+                                onClick={() => toggle(projectId)}
+                                style={{
+                                    width: "100%", display: "flex", alignItems: "center", gap: "0.5rem",
+                                    padding: "0.4rem 0.75rem",
+                                    borderRadius: "var(--radius-md)",
+                                    background: "transparent", border: "none", cursor: "pointer",
+                                    transition: "background 200ms", textAlign: "left"
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
+                                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                             >
-                                <ChevronRightIcon className={`size-3 text-gray-500 dark:text-zinc-400 transition-transform duration-200 ${expandedProjects.has(projectId) ? 'rotate-90' : ''}`} />
-                                <div className="size-2 rounded-full bg-blue-500" />
-                                <span className="truncate max-w-40 text-sm">{project.name}</span>
+                                <ChevronRight size={12} strokeWidth={1.5} style={{
+                                    color: "var(--fg-muted)", flexShrink: 0,
+                                    transform: isExpanded ? "rotate(90deg)" : "rotate(0)",
+                                    transition: "transform 200ms"
+                                }} />
+                                <div style={{
+                                    width: 6, height: 6, borderRadius: "50%",
+                                    background: "var(--accent)", flexShrink: 0, opacity: 0.7
+                                }} />
+                                <span style={{
+                                    fontSize: "0.8rem", color: "var(--fg-muted)",
+                                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1
+                                }}>
+                                    {project.name}
+                                </span>
                             </button>
 
-                            {expandedProjects.has(projectId) && (
-                                <div className="ml-5 mt-1 space-y-1">
-                                    {getProjectSubItems(projectId).map((subItem) => {
+                            {isExpanded && (
+                                <div style={{ marginLeft: "1.375rem", display: "flex", flexDirection: "column", gap: "0.125rem", marginTop: "0.125rem" }}>
+                                    {subItems.map(item => {
                                         const isActive =
-                                            location.pathname === `/projectsDetail` &&
+                                            location.pathname === '/projectsDetail' &&
                                             searchParams.get('id') === projectId &&
-                                            searchParams.get('tab') === subItem.title.toLowerCase();
+                                            searchParams.get('tab') === item.title.toLowerCase();
 
                                         return (
                                             <Link
-                                                key={subItem.title}
-                                                to={subItem.url}
-                                                className={`flex items-center gap-3 px-3 py-1.5 rounded-lg transition-colors duration-200 text-xs ${isActive
-                                                    ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20'
-                                                    : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800'
-                                                }`}
+                                                key={item.title}
+                                                to={item.url}
+                                                style={{
+                                                    display: "flex", alignItems: "center", gap: "0.5rem",
+                                                    padding: "0.375rem 0.75rem",
+                                                    borderRadius: "var(--radius-md)",
+                                                    textDecoration: "none", transition: "all 200ms",
+                                                    fontSize: "0.75rem",
+                                                    background: isActive ? "var(--accent-muted)" : "transparent",
+                                                    color: isActive ? "var(--accent)" : "var(--fg-muted)"
+                                                }}
+                                                onMouseEnter={e => {
+                                                    if (!isActive) {
+                                                        e.currentTarget.style.background = "rgba(255,255,255,0.04)"
+                                                        e.currentTarget.style.color = "var(--fg)"
+                                                    }
+                                                }}
+                                                onMouseLeave={e => {
+                                                    if (!isActive) {
+                                                        e.currentTarget.style.background = "transparent"
+                                                        e.currentTarget.style.color = "var(--fg-muted)"
+                                                    }
+                                                }}
                                             >
-                                                <subItem.icon className="size-3" />
-                                                {subItem.title}
+                                                <item.icon size={12} strokeWidth={1.5} style={{ flexShrink: 0 }} />
+                                                {item.title}
                                             </Link>
                                         );
                                     })}

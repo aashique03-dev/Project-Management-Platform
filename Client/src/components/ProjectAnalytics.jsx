@@ -1,185 +1,179 @@
 import { useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { CheckCircle, Clock, AlertTriangle, Users, ArrowRightIcon } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
+import { CheckCircle, Clock, AlertTriangle, Users } from "lucide-react";
 
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+const COLORS = ["#F59E0B", "#34d399", "#60a5fa", "#f87171", "#c084fc"];
 
-const PRIORITY_COLORS = {
-    LOW: "text-red-600 bg-red-200 dark:text-red-500 dark:bg-red-600",
-    MEDIUM: "text-blue-600 bg-blue-200 dark:text-blue-500 dark:bg-blue-600",
-    HIGH: "text-emerald-600 bg-emerald-200 dark:text-emerald-500 dark:bg-emerald-600",
+const priorityColors = {
+    LOW:    { bar: "#71717a", text: "#a1a1aa" },
+    MEDIUM: { bar: "#F59E0B", text: "#fbbf24" },
+    HIGH:   { bar: "#f87171", text: "#f87171" },
+};
+
+const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    return (
+        <div style={{ background:"#1A1A24", border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, padding:"0.5rem 0.75rem" }}>
+            <p style={{ fontSize:"0.75rem", color:"#FAFAFA", fontWeight:600 }}>{label || payload[0]?.name}</p>
+            <p style={{ fontSize:"0.75rem", color:"#F59E0B", fontFamily:"'JetBrains Mono',monospace" }}>{payload[0]?.value}</p>
+        </div>
+    );
 };
 
 const ProjectAnalytics = ({ project, tasks }) => {
     const { stats, statusData, typeData, priorityData } = useMemo(() => {
         const now = new Date();
-        const total = tasks.length;
-
-        const stats = {
-            total,
-            completed: 0,
-            inProgress: 0,
-            todo: 0,
-            overdue: 0,
-        };
-
-        // ✅ lowercase to match backend enums
-        const statusMap = { todo: 0, in_progress: 0, done: 0 };
-        const typeMap = { TASK: 0, BUG: 0, FEATURE: 0, IMPROVEMENT: 0, OTHER: 0 };
+        const stats = { total: tasks.length, completed: 0, inProgress: 0, todo: 0, overdue: 0 };
+        const statusMap   = { todo: 0, in_progress: 0, done: 0 };
+        const typeMap     = { TASK: 0, BUG: 0, FEATURE: 0, IMPROVEMENT: 0, OTHER: 0 };
         const priorityMap = { LOW: 0, MEDIUM: 0, HIGH: 0 };
 
-        tasks.forEach((t) => {
-            // ✅ lowercase status comparisons
-            if (t.status === "done") stats.completed++;
+        tasks.forEach(t => {
+            if (t.status === "done")        stats.completed++;
             if (t.status === "in_progress") stats.inProgress++;
-            if (t.status === "todo") stats.todo++;
+            if (t.status === "todo")        stats.todo++;
             if (new Date(t.dueDate || t.due_date) < now && t.status !== "done") stats.overdue++;
-
-            // ✅ increment all three maps
-            if (t.status && statusMap[t.status] !== undefined) statusMap[t.status]++;
-            if (t.type && typeMap[t.type] !== undefined) typeMap[t.type]++;
-            if (t.priority && priorityMap[t.priority] !== undefined) priorityMap[t.priority]++;
+            if (statusMap[t.status]   !== undefined) statusMap[t.status]++;
+            if (typeMap[t.type]       !== undefined) typeMap[t.type]++;
+            if (priorityMap[t.priority] !== undefined) priorityMap[t.priority]++;
         });
 
         return {
             stats,
-            // ✅ format labels: "in_progress" → "In Progress"
-            statusData: Object.entries(statusMap).map(([k, v]) => ({
-                name: k.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-                value: v,
+            statusData: Object.entries(statusMap).map(([k,v]) => ({
+                name: k.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase()), value: v
             })),
-            typeData: Object.entries(typeMap)
-                .filter(([_, v]) => v > 0)
-                .map(([k, v]) => ({ name: k, value: v })),
-            priorityData: Object.entries(priorityMap).map(([k, v]) => ({
-                name: k,
-                value: v,
-                percentage: total > 0 ? Math.round((v / total) * 100) : 0,
+            typeData: Object.entries(typeMap).filter(([,v])=>v>0).map(([k,v])=>({ name:k, value:v })),
+            priorityData: Object.entries(priorityMap).map(([k,v]) => ({
+                name: k, value: v,
+                pct: stats.total > 0 ? Math.round((v/stats.total)*100) : 0
             })),
         };
     }, [tasks]);
 
-    const completionRate = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0;
+    const completionRate = stats.total ? Math.round((stats.completed/stats.total)*100) : 0;
 
     const metrics = [
-        {
-            label: "Completion Rate",
-            value: `${completionRate}%`,
-            color: "text-emerald-600 dark:text-emerald-400",
-            icon: <CheckCircle className="size-5 text-emerald-600 dark:text-emerald-400" />,
-            bg: "bg-emerald-200 dark:bg-emerald-500/10",
-        },
-        {
-            label: "Active Tasks",
-            value: stats.inProgress,
-            color: "text-blue-600 dark:text-blue-400",
-            icon: <Clock className="size-5 text-blue-600 dark:text-blue-400" />,
-            bg: "bg-blue-200 dark:bg-blue-500/10",
-        },
-        {
-            label: "Overdue Tasks",
-            value: stats.overdue,
-            color: "text-red-600 dark:text-red-400",
-            icon: <AlertTriangle className="size-5 text-red-600 dark:text-red-400" />,
-            bg: "bg-red-200 dark:bg-red-500/10",
-        },
-        {
-            label: "Team Size",
-            value: project?.members?.length || 0,
-            color: "text-purple-600 dark:text-purple-400",
-            icon: <Users className="size-5 text-purple-600 dark:text-purple-400" />,
-            bg: "bg-purple-200 dark:bg-purple-500/10",
-        },
+        { label:"Completion", value:`${completionRate}%`, icon:CheckCircle, color:"#34d399", bg:"rgba(52,211,153,0.1)"  },
+        { label:"In Progress", value:stats.inProgress,    icon:Clock,        color:"#60a5fa", bg:"rgba(96,165,250,0.1)"  },
+        { label:"Overdue",    value:stats.overdue,        icon:AlertTriangle, color:"#f87171", bg:"rgba(239,68,68,0.1)"  },
+        { label:"Team Size",  value:project?.members?.length||0, icon:Users, color:"#c084fc", bg:"rgba(192,132,252,0.1)" },
     ];
 
+    const cardStyle = {
+        background:"rgba(26,26,36,0.6)", backdropFilter:"blur(8px)",
+        border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, padding:"1.25rem 1.5rem"
+    };
+
+    const axisStyle = { fill:"#52525b", fontSize:11, fontFamily:"'JetBrains Mono',monospace" };
+
     return (
-        <div className="space-y-6">
-            {/* Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {metrics.map((m, i) => (
-                    <div key={i} className="not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
-                        <div className="flex items-center justify-between">
+        <div style={{ display:"flex", flexDirection:"column", gap:"1.25rem" }}>
+            {/* Metric cards */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"0.875rem" }} className="analytics-metrics">
+                {metrics.map(({ label, value, icon:Icon, color, bg }) => (
+                    <div key={label} style={cardStyle}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                             <div>
-                                <p className="text-zinc-600 dark:text-zinc-400 text-sm">{m.label}</p>
-                                <p className={`text-xl font-bold ${m.color}`}>{m.value}</p>
+                                <p style={{ fontSize:"0.72rem", color:"var(--fg-muted)", marginBottom:8 }}>{label}</p>
+                                <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:"1.75rem", fontWeight:700, color, letterSpacing:"-0.04em" }}>
+                                    {value}
+                                </p>
                             </div>
-                            <div className={`p-2 rounded-md ${m.bg}`}>{m.icon}</div>
+                            <div style={{ width:36, height:36, borderRadius:10, background:bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                <Icon size={16} strokeWidth={1.5} style={{ color }} />
+                            </div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Charts */}
-            <div className="grid lg:grid-cols-2 gap-6">
-                {/* Tasks by Status */}
-                <div className="not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
-                    <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Status</h2>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={statusData}>
-                            <XAxis dataKey="name" tick={{ fill: "#52525b", fontSize: 12 }} axisLine={{ stroke: "#d4d4d8" }} />
-                            <YAxis tick={{ fill: "#52525b", fontSize: 12 }} axisLine={{ stroke: "#d4d4d8" }} />
-                            <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            {/* Charts row */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }} className="analytics-charts">
+                {/* Bar chart — Tasks by Status */}
+                <div style={cardStyle}>
+                    <h3 style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:"0.875rem", color:"var(--fg)", marginBottom:"1.25rem" }}>
+                        Tasks by Status
+                    </h3>
+                    <ResponsiveContainer width="100%" height={240}>
+                        <BarChart data={statusData} barCategoryGap="40%">
+                            <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke:"rgba(255,255,255,0.07)" }} tickLine={false} />
+                            <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar dataKey="value" fill="#F59E0B" radius={[5,5,0,0]} maxBarSize={40} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
 
-                {/* Tasks by Type */}
-                <div className="not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
-                    <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Type</h2>
+                {/* Pie chart — Tasks by Type */}
+                <div style={cardStyle}>
+                    <h3 style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:"0.875rem", color:"var(--fg)", marginBottom:"1.25rem" }}>
+                        Tasks by Type
+                    </h3>
                     {typeData.length === 0 ? (
-                        <div className="flex items-center justify-center h-[300px] text-zinc-500 dark:text-zinc-400 text-sm">
-                            No task type data yet
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:240, color:"var(--fg-muted)", fontSize:"0.875rem" }}>
+                            No data yet
                         </div>
                     ) : (
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ResponsiveContainer width="100%" height={240}>
                             <PieChart>
-                                <Pie
-                                    data={typeData}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={100}
+                                <Pie data={typeData} dataKey="value" nameKey="name"
+                                    cx="50%" cy="50%" outerRadius={90} innerRadius={40}
                                     label={({ name, value }) => `${name}: ${value}`}
+                                    labelLine={{ stroke:"rgba(255,255,255,0.15)" }}
                                 >
-                                    {typeData.map((_, i) => (
-                                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                    ))}
+                                    {typeData.map((_,i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                                 </Pie>
+                                <Tooltip content={<CustomTooltip />} />
                             </PieChart>
                         </ResponsiveContainer>
                     )}
                 </div>
             </div>
 
-            {/* Priority Breakdown */}
-            <div className="not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-6">
-                <h2 className="text-zinc-900 dark:text-white mb-4 font-medium">Tasks by Priority</h2>
-                <div className="space-y-4">
-                    {priorityData.map((p) => (
-                        <div key={p.name} className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <ArrowRightIcon className={`size-3.5 ${PRIORITY_COLORS[p.name]} bg-transparent dark:bg-transparent`} />
-                                    <span className="text-zinc-900 dark:text-zinc-200 capitalize">{p.name.toLowerCase()}</span>
+            {/* Priority breakdown */}
+            <div style={cardStyle}>
+                <h3 style={{ fontFamily:"'Space Grotesk',sans-serif", fontWeight:600, fontSize:"0.875rem", color:"var(--fg)", marginBottom:"1.25rem" }}>
+                    Priority Breakdown
+                </h3>
+                <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+                    {priorityData.map(p => {
+                        const pc = priorityColors[p.name] || {};
+                        return (
+                            <div key={p.name}>
+                                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                        <div style={{ width:8, height:8, borderRadius:"50%", background:pc.bar }} />
+                                        <span style={{ fontSize:"0.83rem", color:"var(--fg)", textTransform:"capitalize" }}>
+                                            {p.name.toLowerCase()}
+                                        </span>
+                                    </div>
+                                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                        <span style={{ fontSize:"0.78rem", color:"var(--fg-muted)" }}>{p.value} tasks</span>
+                                        <span style={{
+                                            fontFamily:"'JetBrains Mono',monospace",
+                                            fontSize:"0.7rem", color:pc.text,
+                                            background:`${pc.bar}18`,
+                                            border:`1px solid ${pc.bar}30`,
+                                            borderRadius:9999, padding:"0.1rem 0.45rem"
+                                        }}>
+                                            {p.pct}%
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-zinc-600 dark:text-zinc-400 text-sm">{p.value} tasks</span>
-                                    <span className="px-2 py-0.5 border border-zinc-400 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs rounded">
-                                        {p.percentage}%
-                                    </span>
+                                <div style={{ height:4, borderRadius:9999, background:"rgba(255,255,255,0.07)", overflow:"hidden" }}>
+                                    <div style={{ height:"100%", width:`${p.pct}%`, borderRadius:9999, background:pc.bar, transition:"width 600ms ease-out" }} />
                                 </div>
                             </div>
-                            <div className="w-full bg-zinc-300 dark:bg-zinc-800 rounded-full h-1.5">
-                                <div
-                                    className={`h-1.5 rounded-full ${PRIORITY_COLORS[p.name]}`}
-                                    style={{ width: `${p.percentage}%` }}
-                                />
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
+
+            <style>{`
+                @media (max-width: 900px) { .analytics-metrics { grid-template-columns: repeat(2,1fr) !important; } }
+                @media (max-width: 640px) { .analytics-charts  { grid-template-columns: 1fr !important; } }
+            `}</style>
         </div>
     );
 };

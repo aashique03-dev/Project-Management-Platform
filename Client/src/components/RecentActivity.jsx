@@ -4,96 +4,121 @@ import { format } from "date-fns";
 import { useSelector } from "react-redux";
 
 const typeIcons = {
-    BUG: { icon: Bug, color: "text-red-500 dark:text-red-400" },
-    FEATURE: { icon: Zap, color: "text-blue-500 dark:text-blue-400" },
-    TASK: { icon: Square, color: "text-green-500 dark:text-green-400" },
-    IMPROVEMENT: { icon: MessageSquare, color: "text-amber-500 dark:text-amber-400" },
-    OTHER: { icon: GitCommit, color: "text-purple-500 dark:text-purple-400" },
-};
+    BUG:         { icon: Bug,          color: "#f87171" },
+    FEATURE:     { icon: Zap,          color: "#60a5fa" },
+    TASK:        { icon: Square,       color: "#34d399" },
+    IMPROVEMENT: { icon: MessageSquare,color: "#fbbf24" },
+    OTHER:       { icon: GitCommit,    color: "#c084fc" },
+}
 
-const statusColors = {
-    todo: "bg-zinc-200 text-zinc-800 dark:bg-zinc-600 dark:text-zinc-200",
-    in_progress: "bg-amber-200 text-amber-800 dark:bg-amber-500 dark:text-amber-900",
-    done: "bg-emerald-200 text-emerald-800 dark:bg-emerald-500 dark:text-emerald-900",
-};
+const statusBadgeClass = {
+    todo:        "badge-todo",
+    in_progress: "badge-in-progress",
+    done:        "badge-done",
+}
+
+const statusLabel = {
+    todo:        "To Do",
+    in_progress: "In Progress",
+    done:        "Done",
+}
 
 const RecentActivity = () => {
-    const [tasks, setTasks] = useState([]);
-    const { currentWorkspace } = useSelector((state) => state.workspace);
+    const [tasks, setTasks] = useState([])
+    const { currentWorkspace } = useSelector(state => state.workspace)
 
     useEffect(() => {
-        if (!currentWorkspace) return;
-        const allTasks = currentWorkspace.projects.flatMap((project) => project.tasks);
-        setTasks(allTasks);
-    }, [currentWorkspace]);
+        if (!currentWorkspace) return
+        const all = currentWorkspace.projects.flatMap(p => p.tasks)
+        setTasks(all)
+    }, [currentWorkspace])
 
     return (
-        <div className="bg-white dark:bg-zinc-950 dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 rounded-lg transition-all overflow-hidden">
-            <div className="border-b border-zinc-200 dark:border-zinc-800 p-4">
-                <h2 className="text-lg text-zinc-800 dark:text-zinc-200">Recent Activity</h2>
+        <div style={{
+            background: "var(--card)", backdropFilter: "blur(8px)",
+            border: "1px solid var(--border)", borderRadius: "var(--radius-lg)",
+            overflow: "hidden"
+        }}>
+            <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border)" }}>
+                <h2 style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontWeight: 600, fontSize: "0.9rem",
+                    letterSpacing: "-0.01em", color: "var(--fg)"
+                }}>
+                    Recent Activity
+                </h2>
             </div>
 
-            <div className="p-0">
-                {tasks.length === 0 ? (
-                    <div className="p-12 text-center">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-zinc-200 dark:bg-zinc-800 rounded-full flex items-center justify-center">
-                            <Clock className="w-8 h-8 text-zinc-600 dark:text-zinc-500" />
-                        </div>
-                        <p className="text-zinc-600 dark:text-zinc-400">No recent activity</p>
+            {tasks.length === 0 ? (
+                <div style={{ padding: "4rem 2rem", textAlign: "center" }}>
+                    <div style={{
+                        width: 56, height: 56, borderRadius: "var(--radius-full)",
+                        background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                        display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem"
+                    }}>
+                        <Clock size={22} strokeWidth={1} style={{ color: "var(--fg-muted)" }} />
                     </div>
-                ) : (
-                    <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                        {tasks.map((task) => {
-                            const taskId = task._id || task.id;
-                            const TypeIcon = typeIcons[task.type]?.icon || Square;
-                            const iconColor = typeIcons[task.type]?.color || "text-gray-500 dark:text-gray-400";
+                    <p style={{ fontSize: "0.875rem", color: "var(--fg-muted)" }}>No recent activity</p>
+                </div>
+            ) : (
+                <div>
+                    {tasks.map(task => {
+                        const taskId = task._id || task.id
+                        const typeInfo = typeIcons[task.type] || typeIcons.OTHER
+                        const TypeIcon = typeInfo.icon
+                        const badgeCls = statusBadgeClass[task.status] || "badge-todo"
 
-                            return (
-                                <div key={taskId} className="p-6 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg">
-                                            <TypeIcon className={`w-4 h-4 ${iconColor}`} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <h4 className="text-zinc-800 dark:text-zinc-200 truncate">
-                                                    {task.title}
-                                                </h4>
-                                                <span className={`ml-2 px-2 py-1 rounded text-xs ${statusColors[task.status] || "bg-zinc-300 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"}`}>
-                                                    {task.status
-                                                        ? task.status.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
-                                                        : "Unknown"}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                                                {/* ✅ guard task.type before calling .toLowerCase() */}
-                                                {task.type && (
-                                                    <span className="capitalize">{task.type.toLowerCase()}</span>
-                                                )}
-                                                {task.assignee?.name && (
-                                                    <div className="flex items-center gap-1">
-                                                        <div className="w-4 h-4 bg-zinc-300 dark:bg-zinc-700 rounded-full flex items-center justify-center text-[10px] text-zinc-800 dark:text-zinc-200">
-                                                            {task.assignee.name[0].toUpperCase()}
-                                                        </div>
-                                                        {task.assignee.name}
-                                                    </div>
-                                                )}
-                                                <span>
-                                                    {task.updatedAt && !isNaN(new Date(task.updatedAt))
-                                                        ? format(new Date(task.updatedAt), "MMM d, h:mm a")
-                                                        : "-"}
-                                                </span>
-                                            </div>
-                                        </div>
+                        return (
+                            <div key={taskId} style={{
+                                display: "flex", alignItems: "flex-start", gap: "0.875rem",
+                                padding: "0.875rem 1.25rem",
+                                borderBottom: "1px solid var(--border)",
+                                transition: "background 200ms"
+                            }}
+                                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.025)"}
+                                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                            >
+                                <div style={{
+                                    width: 32, height: 32, borderRadius: "var(--radius-md)",
+                                    background: "var(--bg-elevated)", flexShrink: 0,
+                                    display: "flex", alignItems: "center", justifyContent: "center"
+                                }}>
+                                    <TypeIcon size={14} strokeWidth={1.5} style={{ color: typeInfo.color }} />
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                                        <h4 style={{ fontSize: "0.85rem", fontWeight: 500, color: "var(--fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                            {task.title}
+                                        </h4>
+                                        <span className={`badge ${badgeCls}`} style={{ flexShrink: 0 }}>
+                                            {statusLabel[task.status] || task.status}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                        {task.type && (
+                                            <span style={{ fontSize: "0.7rem", color: "var(--fg-muted)", fontFamily: "'JetBrains Mono', monospace" }}>
+                                                {task.type.toLowerCase()}
+                                            </span>
+                                        )}
+                                        {task.assignee?.name && (
+                                            <span style={{ fontSize: "0.7rem", color: "var(--fg-muted)" }}>
+                                                {task.assignee.name}
+                                            </span>
+                                        )}
+                                        {task.updatedAt && !isNaN(new Date(task.updatedAt)) && (
+                                            <span style={{ fontSize: "0.7rem", color: "var(--fg-subtle)", marginLeft: "auto" }}>
+                                                {format(new Date(task.updatedAt), "MMM d, h:mm a")}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
         </div>
-    );
-};
+    )
+}
 
-export default RecentActivity;
+export default RecentActivity

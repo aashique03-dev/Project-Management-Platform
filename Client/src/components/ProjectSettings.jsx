@@ -3,24 +3,26 @@ import { Plus, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import AddProjectMember from "./AddProjectMember";
 
+const Field = ({ label, children }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--fg-muted)" }}>{label}</label>
+        {children}
+    </div>
+)
+
 export default function ProjectSettings({ project }) {
-
     const [formData, setFormData] = useState({
-        name: "New Website Launch",
-        description: "Initial launch for new web platform.",
-        status: "PLANNING",
-        priority: "MEDIUM",
-        start_date: "2025-09-10",
-        end_date: "2025-10-15",
-        progress: 30,
+        name: "", description: "", status: "PLANNING", priority: "MEDIUM",
+        start_date: "", end_date: "", progress: 0,
     });
-
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const set = (key, val) => setFormData(prev => ({ ...prev, [key]: val }))
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        // API integration point
     };
 
     useEffect(() => {
@@ -30,110 +32,199 @@ export default function ProjectSettings({ project }) {
                 description: project.description || "",
                 status: project.status || "PLANNING",
                 priority: project.priority || "MEDIUM",
-                start_date: project.start_date || "",
-                end_date: project.end_date || "",
+                start_date: project.start_date ? format(new Date(project.start_date), "yyyy-MM-dd") : "",
+                end_date: project.end_date ? format(new Date(project.end_date), "yyyy-MM-dd") : "",
                 progress: project.progress || 0,
             });
         }
     }, [project]);
 
-    const inputClasses = "w-full px-3 py-2 rounded mt-2 border text-sm dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-300";
-
-    const cardClasses = "rounded-lg border p-6 not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border-zinc-300 dark:border-zinc-800";
-
-    const labelClasses = "text-sm text-zinc-600 dark:text-zinc-400";
-
     return (
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", alignItems: "start" }} className="settings-grid">
+
             {/* Project Details */}
-            <div className={cardClasses}>
-                <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300 mb-4">Project Details</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Name */}
-                    <div className="space-y-2">
-                        <label className={labelClasses}>Project Name</label>
-                        <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={inputClasses} required />
-                    </div>
+            <div style={{
+                background: "var(--card)", backdropFilter: "blur(8px)",
+                border: "1px solid var(--border)", borderRadius: "var(--radius-lg)",
+                padding: "1.25rem"
+            }}>
+                <h2 style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontWeight: 600, fontSize: "0.9rem",
+                    color: "var(--fg)", marginBottom: "1.25rem",
+                    letterSpacing: "-0.01em"
+                }}>
+                    Project Details
+                </h2>
 
-                    {/* Description */}
-                    <div className="space-y-2">
-                        <label className={labelClasses}>Description</label>
-                        <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className={inputClasses + " h-24"} />
-                    </div>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <Field label="Project Name">
+                        <input
+                            value={formData.name}
+                            onChange={e => set("name", e.target.value)}
+                            className="input" required
+                        />
+                    </Field>
 
-                    {/* Status & Priority */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className={labelClasses}>Status</label>
-                            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className={inputClasses} >
+                    <Field label="Description">
+                        <textarea
+                            value={formData.description}
+                            onChange={e => set("description", e.target.value)}
+                            className="input"
+                            style={{ height: "5rem", resize: "vertical" }}
+                        />
+                    </Field>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <Field label="Status">
+                            <select value={formData.status} onChange={e => set("status", e.target.value)} className="input">
                                 <option value="PLANNING">Planning</option>
                                 <option value="ACTIVE">Active</option>
                                 <option value="ON_HOLD">On Hold</option>
                                 <option value="COMPLETED">Completed</option>
                                 <option value="CANCELLED">Cancelled</option>
                             </select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className={labelClasses}>Priority</label>
-                            <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })} className={inputClasses} >
+                        </Field>
+                        <Field label="Priority">
+                            <select value={formData.priority} onChange={e => set("priority", e.target.value)} className="input">
                                 <option value="LOW">Low</option>
                                 <option value="MEDIUM">Medium</option>
                                 <option value="HIGH">High</option>
                             </select>
+                        </Field>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <Field label="Start Date">
+                            <input
+                                type="date"
+                                value={formData.start_date}
+                                onChange={e => set("start_date", e.target.value)}
+                                className="input"
+                            />
+                        </Field>
+                        <Field label="End Date">
+                            <input
+                                type="date"
+                                value={formData.end_date}
+                                onChange={e => set("end_date", e.target.value)}
+                                min={formData.start_date}
+                                className="input"
+                            />
+                        </Field>
+                    </div>
+
+                    <Field label={`Progress · ${formData.progress}%`}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                            <input
+                                type="range" min="0" max="100" step="5"
+                                value={formData.progress}
+                                onChange={e => set("progress", Number(e.target.value))}
+                                style={{ width: "100%", accentColor: "var(--accent)", cursor: "pointer" }}
+                            />
+                            <div className="progress-track">
+                                <div className="progress-fill" style={{ width: `${formData.progress}%` }} />
+                            </div>
                         </div>
-                    </div>
+                    </Field>
 
-                    {/* Timeline */}
-                    <div className="space-y-4 grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className={labelClasses}>Start Date</label>
-                            value={formData.start_date ? format(new Date(formData.start_date), "yyyy-MM-dd") : ""}                        </div>
-                        <div className="space-y-2">
-                            <label className={labelClasses}>End Date</label>
-                            value={formData.end_date ? format(new Date(formData.end_date), "yyyy-MM-dd") : ""}
-                        </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "0.5rem", borderTop: "1px solid var(--border)" }}>
+                        <button type="submit" disabled={isSubmitting} className="btn btn-primary btn-sm">
+                            <Save size={14} strokeWidth={1.5} />
+                            {isSubmitting ? "Saving..." : "Save Changes"}
+                        </button>
                     </div>
-
-                    {/* Progress */}
-                    <div className="space-y-2">
-                        <label className={labelClasses}>Progress: {formData.progress}%</label>
-                        <input type="range" min="0" max="100" step="5" value={formData.progress} onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })} className="w-full accent-blue-500 dark:accent-blue-400" />
-                    </div>
-
-                    {/* Save Button */}
-                    <button type="submit" disabled={isSubmitting} className="ml-auto flex items-center text-sm justify-center gap-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white px-4 py-2 rounded" >
-                        <Save className="size-4" /> {isSubmitting ? "Saving..." : "Save Changes"}
-                    </button>
                 </form>
             </div>
 
             {/* Team Members */}
-            <div className="space-y-6">
-                <div className={cardClasses}>
-                    <div className="flex items-center justify-between gap-4">
-                        <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-300 mb-4">
-                            Team Members <span className="text-sm text-zinc-600 dark:text-zinc-400">({project.members?.length || 0})</span>
-                        </h2>
-                        <button type="button" onClick={() => setIsDialogOpen(true)} className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800" >
-                            <Plus className="size-4 text-zinc-900 dark:text-zinc-300" />
-                        </button>
-                        <AddProjectMember isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
-                    </div>
-
-                    {/* Member List */}
-                    {project.members?.length > 0 && (
-                        <div className="space-y-2 mt-2 max-h-32 overflow-y-auto">
-                            {project.members.map((member, index) => (
-                                <div key={index} className="flex items-center justify-between px-3 py-2 rounded dark:bg-zinc-800 text-sm text-zinc-900 dark:text-zinc-300" >
-                                    <span> {member?.user?.email || "Unknown"} </span>
-                                    {project.team_lead === member.user.id && <span className="px-2 py-0.5 rounded-xs ring ring-zinc-200 dark:ring-zinc-600">Team Lead</span>}
-                                </div>
-                            ))}
-                        </div>
-                    )}
+            <div style={{
+                background: "var(--card)", backdropFilter: "blur(8px)",
+                border: "1px solid var(--border)", borderRadius: "var(--radius-lg)",
+                padding: "1.25rem"
+            }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+                    <h2 style={{
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        fontWeight: 600, fontSize: "0.9rem",
+                        color: "var(--fg)", letterSpacing: "-0.01em"
+                    }}>
+                        Team Members
+                        <span style={{ fontWeight: 400, color: "var(--fg-muted)", marginLeft: "0.375rem", fontSize: "0.8rem" }}>
+                            ({project.members?.length || 0})
+                        </span>
+                    </h2>
+                    <button
+                        type="button"
+                        onClick={() => setIsDialogOpen(true)}
+                        className="btn btn-secondary btn-icon"
+                        aria-label="Add member"
+                    >
+                        <Plus size={15} strokeWidth={1.5} />
+                    </button>
                 </div>
+
+                {project.members?.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem", maxHeight: "20rem", overflowY: "auto" }} className="no-scrollbar">
+                        {project.members.map((member, i) => (
+                            <div key={i} style={{
+                                display: "flex", alignItems: "center", justifyContent: "space-between",
+                                padding: "0.625rem 0.875rem",
+                                borderRadius: "var(--radius-md)",
+                                background: "var(--bg-elevated)",
+                                border: "1px solid var(--border)"
+                            }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                                    <div style={{
+                                        width: 28, height: 28, borderRadius: "var(--radius-full)",
+                                        background: "var(--accent-muted)",
+                                        border: "1px solid var(--border-accent)",
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                        fontSize: "0.65rem", fontWeight: 700, color: "var(--accent)",
+                                        flexShrink: 0
+                                    }}>
+                                        {member?.user?.email?.[0]?.toUpperCase() || "?"}
+                                    </div>
+                                    <span style={{ fontSize: "0.8rem", color: "var(--fg)" }}>
+                                        {member?.user?.email || "Unknown"}
+                                    </span>
+                                </div>
+                                {project.team_lead === member?.user?.id && (
+                                    <span style={{
+                                        fontSize: "0.65rem", fontWeight: 600,
+                                        background: "var(--accent-muted)", color: "var(--accent)",
+                                        border: "1px solid var(--border-accent)",
+                                        padding: "0.15rem 0.5rem", borderRadius: "var(--radius-full)",
+                                        fontFamily: "'JetBrains Mono', monospace"
+                                    }}>
+                                        Lead
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
+                        <p style={{ fontSize: "0.85rem", color: "var(--fg-muted)" }}>No members added yet</p>
+                        <button
+                            type="button"
+                            onClick={() => setIsDialogOpen(true)}
+                            className="btn btn-secondary btn-sm"
+                            style={{ marginTop: "0.75rem" }}
+                        >
+                            <Plus size={13} /> Add Member
+                        </button>
+                    </div>
+                )}
+
+                <AddProjectMember isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen} />
             </div>
+
+            <style>{`
+                @media (max-width: 768px) {
+                    .settings-grid { grid-template-columns: 1fr !important; }
+                }
+            `}</style>
         </div>
     );
 }

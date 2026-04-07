@@ -1,71 +1,95 @@
 import { useState } from "react";
-import { Mail, UserPlus } from "lucide-react";
+import { Mail, UserPlus, X } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 
 const AddProjectMember = ({ isDialogOpen, setIsDialogOpen }) => {
-
     const [searchParams] = useSearchParams();
-
     const id = searchParams.get('id');
 
-    const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
-
-    const project = currentWorkspace?.projects.find((p) => p.id === id);
-    const projectMembersEmails = project?.members.map((member) => member.user.email);
+    const currentWorkspace = useSelector(state => state.workspace?.currentWorkspace || null);
+    const project = currentWorkspace?.projects.find(p => p.id === id || p._id === id);
+    const projectMemberEmails = Array.isArray(project?.members) ? project.members.map(m => m.user.email) : [];
 
     const [email, setEmail] = useState('');
     const [isAdding, setIsAdding] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+        // API integration point
     };
+
+    const availableMembers = currentWorkspace?.members.filter(
+        m => !projectMemberEmails.includes(m.user.email)
+    ) || [];
 
     if (!isDialogOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-xl p-6 w-full max-w-md text-zinc-900 dark:text-zinc-200">
+        <div className="overlay" onClick={e => e.target === e.currentTarget && setIsDialogOpen(false)}>
+            <div className="dialog">
                 {/* Header */}
-                <div className="mb-4">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        <UserPlus className="size-5 text-zinc-900 dark:text-zinc-200" /> Add Member to Project
-                    </h2>
-                    {currentWorkspace && (
-                        <p className="text-sm text-zinc-700 dark:text-zinc-400">
-                            Adding to Project: <span className="text-blue-600 dark:text-blue-400">{project.name}</span>
-                        </p>
-                    )}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+                    <div>
+                        <h2 style={{
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            fontWeight: 700, fontSize: "1.1rem",
+                            letterSpacing: "-0.02em", color: "var(--fg)"
+                        }}>
+                            Add Member
+                        </h2>
+                        {project && (
+                            <p style={{ fontSize: "0.75rem", color: "var(--fg-muted)", marginTop: "0.2rem" }}>
+                                Project: <span style={{ color: "var(--accent)" }}>{project.name}</span>
+                            </p>
+                        )}
+                    </div>
+                    <button onClick={() => setIsDialogOpen(false)} className="btn btn-ghost btn-icon">
+                        <X size={16} strokeWidth={1.5} />
+                    </button>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Email */}
-                    <div className="space-y-2">
-                        <label htmlFor="email" className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
-                            Email Address
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--fg-muted)" }}>
+                            Select Member
                         </label>
-                        <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 w-4 h-4" />
-                            {/* List All non project members from current workspace */}
-                            <select value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10 mt-1 w-full rounded border border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-200 text-sm placeholder-zinc-400 dark:placeholder-zinc-500 py-2 focus:outline-none focus:border-blue-500" required >
-                                <option value="">Select a member</option>
-                                {currentWorkspace?.members
-                                    .filter((member) => !projectMembersEmails.includes(member.user.email))
-                                    .map((member) => (
-                                        <option key={member.user.id} value={member.user.email}> {member.user.email} </option>
-                                    ))}
+                        <div style={{ position: "relative" }}>
+                            <Mail size={14} strokeWidth={1.5} style={{
+                                position: "absolute", left: "0.75rem", top: "50%",
+                                transform: "translateY(-50%)", color: "var(--fg-muted)"
+                            }} />
+                            <select
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                className="input"
+                                style={{ paddingLeft: "2.25rem" }}
+                                required
+                            >
+                                <option value="">Choose a workspace member...</option>
+                                {availableMembers.map(member => (
+                                    <option key={member.user.id} value={member.user.email}>
+                                        {member.user.email}
+                                    </option>
+                                ))}
                             </select>
                         </div>
+                        {availableMembers.length === 0 && (
+                            <p style={{ fontSize: "0.75rem", color: "var(--fg-muted)", marginTop: "0.25rem" }}>
+                                All workspace members are already in this project.
+                            </p>
+                        )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="flex justify-end gap-3 pt-2">
-                        <button type="button" onClick={() => setIsDialogOpen(false)} className="px-5 py-2 text-sm rounded border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition" >
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.625rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border)" }}>
+                        <button type="button" onClick={() => setIsDialogOpen(false)} className="btn btn-secondary btn-sm">
                             Cancel
                         </button>
-                        <button type="submit" disabled={isAdding || !currentWorkspace} className="px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 hover:opacity-90 text-white disabled:opacity-50 transition" >
+                        <button
+                            type="submit"
+                            disabled={isAdding || !currentWorkspace || availableMembers.length === 0}
+                            className="btn btn-primary btn-sm"
+                        >
                             {isAdding ? "Adding..." : "Add Member"}
                         </button>
                     </div>
