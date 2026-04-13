@@ -10,6 +10,7 @@ import TaskDetails from "./pages/TaskDetails";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import LandingPage from "./pages/LandingPage";
+import CursorGlow from "./components/CursorGlow";
 
 // Redirects logged-in users away from public pages (landing, login, register)
 const PublicRoute = () => {
@@ -26,6 +27,9 @@ const ProtectedRoute = () => {
 const App = () => {
     return (
         <>
+            <CursorGlow />
+            <h1 style={{ color: "white" }}></h1>
+
             <Toaster position="top-right" />
             <Routes>
                 {/* Public routes — redirect to dashboard if already logged in */}
